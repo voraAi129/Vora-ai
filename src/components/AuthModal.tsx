@@ -133,10 +133,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
       setLoading(true);
       sound.playTap();
       const otpRes = await api.sendOtp(regMobile.trim(), 'register');
-      setOtpHint(otpRes.demoOtpHint || '889900');
       setOtpStep(true);
       setOtpCountdown(60);
-      setSuccessMsg(otpRes.message);
+      setSuccessMsg(otpRes.message || `OTP sent to +91 ${regMobile.trim().slice(0, 3)}****${regMobile.trim().slice(7)}`);
 
       // Start countdown
       const interval = setInterval(() => {
@@ -214,7 +213,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
       setLoading(true);
       const res = await api.sendOtp(forgotMobile.trim(), 'forgot_password');
       setForgotStep('reset');
-      setOtpHint(res.demoOtpHint || '889900');
       setSuccessMsg(res.message);
     } catch (err: any) {
       setError(err.message);
@@ -542,11 +540,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
             <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
               <span className="text-xs text-slate-400 block mb-1">Enter 6-digit OTP sent to:</span>
               <span className="text-sm font-mono font-bold text-emerald-400">+91 {regMobile}</span>
-              {otpHint && (
-                <div className="mt-2 py-1 px-2.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 inline-block font-mono">
-                  Test Gateway OTP Hint: <span className="font-bold underline">{otpHint}</span>
-                </div>
-              )}
+              <p className="text-[11px] text-slate-500 mt-2">Check your SMS inbox. OTP valid for 10 minutes.</p>
             </div>
 
             <div>
@@ -569,9 +563,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
                   try {
                     sound.playTap();
                     const res = await api.sendOtp(regMobile, 'register');
-                    setOtpHint(res.demoOtpHint || '889900');
                     setOtpCountdown(60);
-                    setSuccessMsg('OTP resent successfully');
+                    setSuccessMsg('OTP resent successfully. Check your SMS.');
                   } catch (e: any) {
                     setError(e.message);
                   }
@@ -648,14 +641,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
               </form>
             ) : (
               <form onSubmit={handleForgotResetPassword} className="space-y-3">
-                {otpHint && (
-                  <div className="text-[11px] text-emerald-400 font-mono">
-                    Test OTP: {otpHint}
-                  </div>
-                )}
                 <input
                   type="text"
-                  placeholder="Enter OTP (889900)"
+                  placeholder="Enter 6-digit OTP"
                   value={forgotOtp}
                   onChange={(e) => setForgotOtp(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-sm font-mono text-white"

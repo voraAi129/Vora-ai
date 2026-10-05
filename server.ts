@@ -15,6 +15,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'vora_earning_fintech_production_se
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_voraEarning2026';
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'vora_razorpay_secret_key_prod';
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'vora_webhook_secret_key';
+const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || 'OT3RwPxYdortDGgmseJ71k29vUACcIb5QXKW6ZfjEaFBN0zlhLNfM5Tv2IOLJSypjF9xBlYtm8KngZWb';
+const FAST2SMS_API_URL = 'https://www.fast2sms.com/dev/bulkV2';
 
 // Data directory
 const DATA_DIR = path.resolve(__dirname, 'data');
@@ -627,7 +629,7 @@ function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFuncti
 // ==========================================
 
 // Send OTP
-app.post('/api/auth/send-otp', (req: Request, res: Response) => {
+app.post('/api/auth/send-otp', async (req: Request, res: Response) => {
   const { mobile, purpose } = req.body;
   if (!mobile || !/^\d{10}$/.test(mobile)) {
     return res.status(400).json({ error: 'Valid 10-digit mobile number is required' });
@@ -646,12 +648,36 @@ app.post('/api/auth/send-otp', (req: Request, res: Response) => {
     attempts: 0
   };
 
-  console.log(`[OTP GATEWAY] Sent real verification code ${generatedOtp} to +91 ${mobile}`);
+  // Send OTP via Fast2SMS API
+  try {
+    const smsResponse = await fetch(FAST2SMS_API_URL, {
+      method: 'POST',
+      headers: {
+        'authorization': FAST2SMS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        route: 'otp',
+        variables_values: generatedOtp,
+        numbers: mobile,
+        flash: 0
+      })
+    });
+    const smsResult = await smsResponse.json();
+    console.log(`[FAST2SMS] OTP ${generatedOtp} sent to +91 ${mobile} | Response:`, smsResult);
+
+    if (!smsResult.return) {
+      console.error('[FAST2SMS] Failed to send OTP:', smsResult.message);
+      return res.status(500).json({ error: 'Failed to send OTP. Please try again later.' });
+    }
+  } catch (smsErr) {
+    console.error('[FAST2SMS] Error sending OTP:', smsErr);
+    return res.status(500).json({ error: 'SMS service temporarily unavailable. Please try again.' });
+  }
 
   res.json({
     success: true,
-    message: `OTP sent successfully to +91 ${mobile.slice(0, 3)}****${mobile.slice(7)}`,
-    demoOtpHint: generatedOtp // Shows the actual generated OTP on UI so user can enter it directly
+    message: `OTP sent successfully to +91 ${mobile.slice(0, 3)}****${mobile.slice(7)}`
   });
 });
 
@@ -1004,8 +1030,8 @@ app.get('/api/transactions', requireAuth, (req: AuthenticatedRequest, res: Respo
 // RECHARGE & RAZORPAY PAYMENT ENDPOINTS
 // ==========================================
 
-// Create Razorpay Order
-app.post('/api/payment/create-order', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+// Create Razorpay Order (Real API Integration)
+app.post('/api/payment/create-order', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { amount } = req.body;
   const numAmount = Number(amount);
 
@@ -1020,31 +1046,64 @@ app.post('/api/payment/create-order', requireAuth, (req: AuthenticatedRequest, r
     });
   }
 
-  // Generate Razorpay Order
-  const orderId = `order_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-  const order: RechargeOrder = {
-    id: orderId,
-    userId: req.user!.id,
-    amount: numAmount,
-    currency: 'INR',
-    status: 'INITIATED',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
+  try {
+    // Call Real Razorpay Orders API
+    const razorpayAuth = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
+    const rzpResponse = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${razorpayAuth}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: numAmount * 100, // Razorpay expects amount in paise
+        currency: 'INR',
+        receipt: `rcpt_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+        notes: {
+          userId: req.user!.id,
+          userName: req.user!.name,
+          purpose: 'wallet_recharge'
+        }
+      })
+    });
 
-  db.rechargeOrders.push(order);
-  saveDb();
+    const rzpOrder = await rzpResponse.json();
 
-  res.json({
-    orderId: order.id,
-    amount: order.amount,
-    currency: order.currency,
-    keyId: RAZORPAY_KEY_ID,
-    user: {
-      name: req.user!.name,
-      mobile: req.user!.mobile
+    if (!rzpResponse.ok || rzpOrder.error) {
+      console.error('[RAZORPAY] Order creation failed:', rzpOrder);
+      return res.status(500).json({ error: 'Payment gateway error. Please try again.' });
     }
-  });
+
+    console.log(`[RAZORPAY] Order created: ${rzpOrder.id} for ₹${numAmount}`);
+
+    // Store order with real Razorpay order ID
+    const order: RechargeOrder = {
+      id: rzpOrder.id, // Real Razorpay order_id like order_xxxxx
+      userId: req.user!.id,
+      amount: numAmount,
+      currency: 'INR',
+      status: 'INITIATED',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    db.rechargeOrders.push(order);
+    saveDb();
+
+    res.json({
+      orderId: rzpOrder.id,
+      amount: numAmount,
+      currency: 'INR',
+      keyId: RAZORPAY_KEY_ID,
+      user: {
+        name: req.user!.name,
+        mobile: req.user!.mobile
+      }
+    });
+  } catch (err) {
+    console.error('[RAZORPAY] Order creation error:', err);
+    return res.status(500).json({ error: 'Failed to create payment order. Please try again.' });
+  }
 });
 
 // Verify Razorpay Payment Signature
@@ -1099,10 +1158,10 @@ app.post('/api/payment/verify', requireAuth, (req: AuthenticatedRequest, res: Re
   hmac.update(`${order.id}|${paymentId}`);
   const expectedSignature = hmac.digest('hex');
 
-  // If a signature was passed, verify it (or verify internal test signature)
+  // Strict signature verification - must match expected HMAC
   const isSignatureValid = razorpay_signature
-    ? razorpay_signature === expectedSignature || razorpay_signature.length >= 10
-    : true;
+    ? razorpay_signature === expectedSignature
+    : false; // Signature is required for real payments
 
   if (!isSignatureValid) {
     order.status = 'FAILED';

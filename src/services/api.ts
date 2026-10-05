@@ -22,6 +22,9 @@ export const LIVE_BACKEND_URL = 'https://vora-earning-production.up.railway.app'
 // Production server URL — defaults to live Railway backend
 const BASE_URL: string = (import.meta as any).env?.VITE_API_URL || LIVE_BACKEND_URL;
 
+// Local storage key for auth token persistence
+const TOKEN_KEY = 'vora_auth_token';
+
 class ApiService {
   private token: string | null = null;
   private onOfflineCallback: (() => void) | null = null;
@@ -130,7 +133,7 @@ class ApiService {
 
     // 2. Send OTP
     if (cleanEndpoint === '/api/auth/send-otp') {
-      return { success: true, message: 'OTP sent successfully', demoOtpHint: '889900' } as unknown as T;
+      return { success: true, message: 'OTP sent successfully' } as unknown as T;
     }
 
     // 3. Verify OTP
@@ -326,7 +329,7 @@ class ApiService {
 
   // --- Auth ---
   public async sendOtp(mobile: string, purpose: 'register' | 'forgot_password' = 'register') {
-    return this.request<{ success: boolean; message: string; demoOtpHint?: string }>('/api/auth/send-otp', {
+    return this.request<{ success: boolean; message: string }>('/api/auth/send-otp', {
       method: 'POST',
       body: JSON.stringify({ mobile, purpose })
     });

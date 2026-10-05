@@ -29,6 +29,8 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Build Web Frontend
+        env:
+          VITE_API_URL: https://vora-earning-production.up.railway.app
         run: npm run build
 
       - name: Sync Capacitor Android

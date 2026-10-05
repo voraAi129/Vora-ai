@@ -33,6 +33,7 @@ export const RechargeScreen: React.FC<RechargeScreenProps> = ({ onBack, onSucces
     amount: number;
     userName: string;
     userMobile: string;
+    keyId: string;
   } | null>(null);
 
   // Success / Pending outcome state
@@ -77,7 +78,8 @@ export const RechargeScreen: React.FC<RechargeScreenProps> = ({ onBack, onSucces
         orderId: order.orderId,
         amount: order.amount,
         userName: order.user?.name || 'Vora User',
-        userMobile: order.user?.mobile || '9999988888'
+        userMobile: order.user?.mobile || '9999988888',
+        keyId: order.keyId || 'rzp_test_voraEarning2026'
       });
     } catch (err: any) {
       sound.playError();
@@ -302,6 +304,7 @@ export const RechargeScreen: React.FC<RechargeScreenProps> = ({ onBack, onSucces
           amount={activeOrder.amount}
           userName={activeOrder.userName}
           userMobile={activeOrder.userMobile}
+          keyId={activeOrder.keyId}
           onSuccess={handleRazorpaySuccess}
           onFailure={handleRazorpayFailure}
           onClose={() => setActiveOrder(null)}
