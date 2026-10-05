@@ -27,7 +27,19 @@ import { OfflineModal } from './components/OfflineModal';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Initialize currentUser from local persistent storage so user stays logged in
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('vora_user_data');
+        const token = localStorage.getItem('vora_auth_token');
+        if (stored && token) {
+          return JSON.parse(stored);
+        }
+      } catch {}
+    }
+    return null;
+  });
   const [currentView, setCurrentView] = useState<'home' | 'recharge' | 'withdraw' | 'history' | 'profile' | 'admin'>('home');
   const [systemSettings, setSystemSettings] = useState<AppSettings | null>(null);
 
@@ -63,11 +75,21 @@ export default function App() {
 
     if (api.getToken()) {
       api.getProfile().then((res) => {
-        if (res.user) {
+        if (res && res.user) {
           setCurrentUser(res.user);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('vora_user_data', JSON.stringify(res.user));
+          }
         }
-      }).catch(() => {
-        api.setToken(null);
+      }).catch((err) => {
+        // Only clear if 401 Unauthorized, never on network error or offline
+        if (err?.message?.includes('401') || err?.message?.toLowerCase().includes('unauthorized')) {
+          api.setToken(null);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('vora_user_data');
+          }
+          setCurrentUser(null);
+        }
       });
     }
   }, []);
@@ -118,6 +140,12 @@ export default function App() {
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     };
+    if (token) {
+      api.setToken(token);
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('vora_user_data', JSON.stringify(safeUser));
+    }
     setCurrentUser(safeUser);
     if (safeUser.role === 'ADMIN') {
       setCurrentView('admin');
@@ -128,7 +156,14 @@ export default function App() {
 
   // Logout handler
   const handleLogout = async () => {
-    await api.logout();
+    try {
+      await api.logout();
+    } catch {}
+    api.setToken(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('vora_user_data');
+      localStorage.removeItem('vora_auth_token');
+    }
     setCurrentUser(null);
     setCurrentView('home');
   };

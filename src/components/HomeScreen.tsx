@@ -81,6 +81,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
   const [liveAccruedReward, setLiveAccruedReward] = useState<number>(0);
   const animatedAccruedReward = useAnimatedCounter(liveAccruedReward, 400);
 
+  // Mandatory First Recharge Paywall State
+  const [showRechargeRequiredModal, setShowRechargeRequiredModal] = useState<boolean>(false);
+  const [rechargeModalMessage, setRechargeModalMessage] = useState<string>('');
+
+  // Check if first recharge is required
+  const isFirstRechargeDone = (wallet.totalDeposited || 0) > 0 || (wallet.availableBalance || 0) >= 100;
+
+  // Gated Ad Watcher
+  const handleWatchAdGated = () => {
+    sound.playTap();
+    if (!isFirstRechargeDone) {
+      setRechargeModalMessage('Bina pehla recharge kiye Ads dekhna aur rewards earn karna allow nahi hai. Earning unlock karne ke liye pehle wallet recharge karein.');
+      setShowRechargeRequiredModal(true);
+      return;
+    }
+    onWatchAd();
+  };
+
   // Load wallet & session data
   const refreshData = async () => {
     try {
@@ -115,13 +133,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-prompt AdMob ad every 5 minutes
+  // Auto-prompt AdMob ad every 5 minutes (only for users with first recharge done)
   useEffect(() => {
     const adInterval = setInterval(() => {
-      onWatchAd();
+      if (isFirstRechargeDone) {
+        onWatchAd();
+      }
     }, 5 * 60 * 1000); // 5 minutes (300000ms)
     return () => clearInterval(adInterval);
-  }, [onWatchAd]);
+  }, [onWatchAd, isFirstRechargeDone]);
 
   // Update serverNowMs every second synced with server offset
   useEffect(() => {
@@ -233,15 +253,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
     try {
       setClaiming(true);
       sound.playTap();
-      const res = await api.claimReward();
+      await api.claimReward();
       sound.playRewardChime();
       try {
-        confetti({
-          particleCount: 90,
-          spread: 75,
-          origin: { y: 0.6 }
-        });
-      } catch {}
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.6 }
+          });
+        }
+      } catch (e) {
+        console.warn('Confetti animation skipped', e);
+      }
       setSession(null);
       refreshData();
     } catch (err: any) {
@@ -879,10 +903,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
         </div>
 
         <button
-          onClick={() => {
-            sound.playTap();
-            onWatchAd();
-          }}
+          onClick={handleWatchAdGated}
           className="py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs flex items-center space-x-1 shrink-0 active:scale-95 transition-all"
         >
           <span>{i18n.t('watchAd')}</span>
@@ -903,14 +924,78 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
         <span className="text-[9px] text-slate-600 font-mono">ca-app-pub...6300978111</span>
       </div>
 
-      {/* ===================== COMPLIANCE & LEGAL NOTICE ===================== */}
-      <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800 text-[10px] text-slate-500 leading-normal">
-        <div className="flex items-center space-x-1 text-slate-400 font-semibold mb-1">
-          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-          <span>{i18n.t('complianceNotice')}</span>
+      {/* ===================== FIRST RECHARGE REQUIRED MODAL ===================== */}
+      {showRechargeRequiredModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-gradient-to-b from-[#111928] via-[#0d1320] to-[#070b13] border-2 border-amber-500/40 rounded-3xl w-full max-w-sm p-6 shadow-2xl shadow-amber-500/20 text-center space-y-4 relative">
+            <button
+              onClick={() => setShowRechargeRequiredModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-full bg-slate-800/60"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Glowing Icon */}
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-emerald-400 p-[2px] shadow-lg shadow-amber-500/30">
+              <div className="w-full h-full bg-[#0d1320] rounded-[22px] flex items-center justify-center">
+                <ArrowDownLeft className="w-8 h-8 text-amber-400 animate-bounce" />
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 uppercase tracking-wider font-mono">
+                Mandatory Activation
+              </span>
+              <h3 className="text-lg font-black text-white mt-2">
+                Pehle Recharge Karein
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed mt-1.5 px-2">
+                {rechargeModalMessage || 'Platform par earning start karne ke liye aur Real Ads & Daily Yield activate karne ke liye sabse pehle wallet recharge complete karein.'}
+              </p>
+            </div>
+
+            {/* Benefits Box */}
+            <div className="bg-slate-950/80 rounded-2xl p-3.5 border border-slate-800 text-left text-xs space-y-2">
+              <div className="flex items-center space-x-2 text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>100% Secure Instant UPI & Razorpay</span>
+              </div>
+              <div className="flex items-center space-x-2 text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Unlock Real Daily Ads & 2.5% Daily Rewards</span>
+              </div>
+              <div className="flex items-center space-x-2 text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Instant Withdrawal to Bank Account / UPI</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playTap();
+                  setShowRechargeRequiredModal(false);
+                  onNavigate('recharge');
+                }}
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-emerald-400 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/25 active:scale-95 transition-all flex items-center justify-center space-x-2"
+              >
+                <ArrowDownLeft className="w-5 h-5 text-slate-950 stroke-[3]" />
+                <span>Abhi Recharge Karein (₹100 se start)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowRechargeRequiredModal(false)}
+                className="text-xs text-slate-400 hover:text-slate-200 font-medium py-1"
+              >
+                Baad mein karein
+              </button>
+            </div>
+          </div>
         </div>
-        {i18n.t('complianceDisclaimer')}
-      </div>
+      )}
     </div>
   );
 };

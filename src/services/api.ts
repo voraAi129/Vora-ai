@@ -17,11 +17,10 @@ import {
   AuditLog
 } from '../types';
 
-const TOKEN_KEY = 'vora_auth_token';
+export const LIVE_BACKEND_URL = 'https://vora-earning-production.up.railway.app';
 
-// Production server URL — set VITE_API_URL in your .env file
-// Example: VITE_API_URL=https://your-app.railway.app
-const BASE_URL: string = (import.meta as any).env?.VITE_API_URL ?? '';
+// Production server URL — defaults to live Railway backend
+const BASE_URL: string = (import.meta as any).env?.VITE_API_URL || LIVE_BACKEND_URL;
 
 class ApiService {
   private token: string | null = null;
@@ -63,7 +62,9 @@ class ApiService {
     }
 
     // Prepend BASE_URL for APK / deployed builds
-    const url = BASE_URL ? `${BASE_URL}${endpoint}` : endpoint;
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const baseUrl = BASE_URL ? BASE_URL.replace(/\/$/, '') : LIVE_BACKEND_URL;
+    const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${cleanEndpoint}`;
 
     try {
       const response = await fetch(url, {

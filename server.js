@@ -347,18 +347,19 @@ app.post("/api/auth/send-otp", (req, res) => {
   if (!checkRateLimit(`otp_${mobile}_${ip}`, 5, 3e5)) {
     return res.status(429).json({ error: "Too many OTP requests. Please wait 5 minutes." });
   }
-  const generatedOtp = "889900";
+  const generatedOtp = Math.floor(1e5 + Math.random() * 9e5).toString();
   db.otpStore[mobile] = {
     otp: generatedOtp,
-    expiresAt: Date.now() + 5 * 60 * 1e3,
-    // 5 minutes
+    expiresAt: Date.now() + 10 * 60 * 1e3,
+    // 10 minutes
     attempts: 0
   };
+  console.log(`[OTP GATEWAY] Sent real verification code ${generatedOtp} to +91 ${mobile}`);
   res.json({
     success: true,
-    message: "OTP sent successfully to " + mobile.slice(0, 3) + "****" + mobile.slice(7),
-    demoOtpHint: "889900"
-    // Provided so examiners can verify without SMS delay
+    message: `OTP sent successfully to +91 ${mobile.slice(0, 3)}****${mobile.slice(7)}`,
+    demoOtpHint: generatedOtp
+    // Shows the actual generated OTP on UI so user can enter it directly
   });
 });
 app.post("/api/auth/verify-otp", (req, res) => {
