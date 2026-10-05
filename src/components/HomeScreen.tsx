@@ -115,6 +115,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-prompt AdMob ad every 5 minutes
+  useEffect(() => {
+    const adInterval = setInterval(() => {
+      onWatchAd();
+    }, 5 * 60 * 1000); // 5 minutes (300000ms)
+    return () => clearInterval(adInterval);
+  }, [onWatchAd]);
+
   // Update serverNowMs every second synced with server offset
   useEffect(() => {
     const timer = setInterval(() => {
