@@ -1,0 +1,19 @@
+{
+  "name": "VORA EARNING",
+  "short_name": "VoraEarning",
+  "description": "Production-ready Android fintech and digital rewards application with secure ledger, 24-hour sessions, Razorpay recharge, and withdrawals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07090e",
+  "theme_color": "#0a0e17",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "productivity", "utilities"]
+}

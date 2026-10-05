@@ -1,0 +1,6 @@
+{
+  "name": "VORA EARNING",
+  "description": "Production-ready Android fintech and reward application with secure wallet ledger, 24-hour sessions, Razorpay recharge, withdrawals, and admin portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

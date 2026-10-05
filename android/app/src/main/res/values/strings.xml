@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VORA EARNING</string>
+    <string name="title_activity_main">VORA EARNING</string>
+    <string name="package_name">com.vora.earning</string>
+    <string name="custom_url_scheme">com.vora.earning</string>
+</resources>

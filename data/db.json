@@ -1,0 +1,1958 @@
+{
+  "users": [
+    {
+      "id": "usr_admin_root",
+      "name": "System Administrator",
+      "mobile": "9876543210",
+      "passwordHash": "cd5f395258ba0a0ccca50832a63fbfba909d1a19ab7152f00a09875ba2d332c4e1a93db7b66a2c3b5cc8a9bdc4315af73ad27a81db7c24c69d36d28a8484cdcb",
+      "salt": "74160f135a01018868ce330805e925de",
+      "role": "ADMIN",
+      "status": "ACTIVE",
+      "createdAt": "2026-10-05T06:41:34.688Z",
+      "lastLoginAt": "2026-10-05T10:58:05.497Z"
+    },
+    {
+      "id": "usr_demo_tester",
+      "name": "Prince Sharma",
+      "mobile": "9999988888",
+      "passwordHash": "076000b8fa514da1602774451034e381efa14df76657a400ab1d090e6b690527b3faec1c4e3d301f2cd6d722a91546e8d14df165efaa045b9d5ebd08bcc58d4c",
+      "salt": "5138371f34da3a3220ff25fbd49f52ba",
+      "role": "USER",
+      "status": "ACTIVE",
+      "createdAt": "2026-09-28T06:41:34.758Z",
+      "bankDetails": {
+        "accountHolderName": "Prince Sharma",
+        "accountNumber": "912345678901",
+        "ifsc": "HDFC0001234",
+        "upiId": "prince@okhdfcbank"
+      },
+      "lastLoginAt": "2026-10-05T10:57:11.148Z"
+    },
+    {
+      "id": "usr_admin_root",
+      "name": "System Administrator",
+      "mobile": "9266428368",
+      "passwordHash": "968127785df467cfb78239ce61955707c350b6c4ba1fa8848c85c5cdada3badcb18c920169a95358133c378f551bb54a76cb32caac1ee6f432f235b96e565ae4",
+      "salt": "57553e8621a3e8a8184e28132945a6b1",
+      "role": "ADMIN",
+      "status": "ACTIVE",
+      "createdAt": "2026-10-05T06:46:20.994Z"
+    },
+    {
+      "id": "usr_1791185504106_d799f4",
+      "name": "Prince",
+      "mobile": "8595395606",
+      "passwordHash": "476d6f8b31359ce8adacd0d2c6f0f05da350e9ce832bebea82391c0a5337d974489e630b0d48578481f863ead7a8188056ee93ed22d5fcb870e0db82175f70ad",
+      "salt": "ac268dad8274cb12a2284261f210ab95",
+      "role": "USER",
+      "status": "ACTIVE",
+      "createdAt": "2026-10-05T07:31:44.106Z",
+      "lastLoginAt": "2026-10-05T11:01:13.103Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "sess_1791182507405_866d20",
+      "userId": "usr_demo_tester",
+      "token": "da1522a85a66b3dd482c437ad04a23c785622e518a2b265f105b8c6e52488502",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T06:41:47.405Z",
+      "expiresAt": "2026-11-04T06:41:47.405Z"
+    },
+    {
+      "id": "sess_1791182512554_a18166",
+      "userId": "usr_admin_root",
+      "token": "3d568a537dc02c355a8b0f397bd05c82c55eb38c0b3c0993f31a93229b954a5a",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T06:41:52.554Z",
+      "expiresAt": "2026-11-04T06:41:52.554Z"
+    },
+    {
+      "id": "sess_1791182814821_a7c307",
+      "userId": "usr_demo_tester",
+      "token": "e769731cc1cc4eb21bf7e98e7b71d68f73b9984284d3c0d6866ff1a11152d790",
+      "device": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T06:46:54.822Z",
+      "expiresAt": "2026-11-04T06:46:54.822Z"
+    },
+    {
+      "id": "sess_1791183050679_b00b85",
+      "userId": "usr_demo_tester",
+      "token": "a38baf9de2f62a0b1d0c13bb034c9977c3a32dbda11016c3736946f7adc9fe18",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T06:50:50.679Z",
+      "expiresAt": "2026-11-04T06:50:50.679Z"
+    },
+    {
+      "id": "sess_1791183092295_edb302",
+      "userId": "usr_admin_root",
+      "token": "c117d9a2a926780884f920b65b50a6792e25bd519f7e62230595519144c6821a",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T06:51:32.295Z",
+      "expiresAt": "2026-11-04T06:51:32.295Z"
+    },
+    {
+      "id": "sess_1791183344878_27e3df",
+      "userId": "usr_admin_root",
+      "token": "4f694742461878f2b9f978f126710f7aa279adf58f9b1c03ce0727250cc89dd1",
+      "device": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T06:55:44.878Z",
+      "expiresAt": "2026-11-04T06:55:44.878Z"
+    },
+    {
+      "id": "sess_1791183589930_7ea94d",
+      "userId": "usr_demo_tester",
+      "token": "027e06cccaeff9a276c9fcb27cdfc26a65c6a8ac63bfc381f7759069bcb14060",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T06:59:49.931Z",
+      "expiresAt": "2026-11-04T06:59:49.931Z"
+    },
+    {
+      "id": "sess_1791184223184_eb32f4",
+      "userId": "usr_admin_root",
+      "token": "16cbdf960d0898b2aa3570ff1ce7424a43ffe15078238ed1b909ee08301a634e",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T07:10:23.184Z",
+      "expiresAt": "2026-11-04T07:10:23.184Z"
+    },
+    {
+      "id": "sess_1791184402311_c49669",
+      "userId": "usr_demo_tester",
+      "token": "cbd37e25afad7d338af97fa431515d3e5d9b85796642bce996f30347e43ee811",
+      "device": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T07:13:22.312Z",
+      "expiresAt": "2026-11-04T07:13:22.312Z"
+    },
+    {
+      "id": "sess_1791184745080_a7209e",
+      "userId": "usr_demo_tester",
+      "token": "e5e7e306e07919c3a5a57c521be71e898399b123b9a37cd396bd4752ea323f17",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T07:19:05.080Z",
+      "expiresAt": "2026-11-04T07:19:05.080Z"
+    },
+    {
+      "id": "sess_1791184761360_73021c",
+      "userId": "usr_admin_root",
+      "token": "f3921bd9a4e104e2bf9b05840fe0710cf82446eca8bcffacdf5679f0f7a488b9",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T07:19:21.360Z",
+      "expiresAt": "2026-11-04T07:19:21.360Z"
+    },
+    {
+      "id": "sess_1791185170460_6a79a6",
+      "userId": "usr_demo_tester",
+      "token": "27deea78305bfba4a0aa20c54017d5df8883e84c03ef0fa90d3d2b87ce95388f",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T07:26:10.460Z",
+      "expiresAt": "2026-11-04T07:26:10.460Z"
+    },
+    {
+      "id": "sess_1791185182912_0b733e",
+      "userId": "usr_admin_root",
+      "token": "ac0652dd7285b15d138b09258e7e878905c978e706e156ed7f07b319b87aff27",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T07:26:22.912Z",
+      "expiresAt": "2026-11-04T07:26:22.912Z"
+    },
+    {
+      "id": "sess_1791185463332_f741a0",
+      "userId": "usr_admin_root",
+      "token": "dae5a7b1a7a957ebd2fc3fa739d3e407c46a34f1eed4b12dd5ec16cc355ba9ab",
+      "device": "curl/7.88.1",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T07:31:03.332Z",
+      "expiresAt": "2026-11-04T07:31:03.332Z"
+    },
+    {
+      "id": "sess_1791185678965_adb520",
+      "userId": "usr_admin_root",
+      "token": "2ce2caca3407d25b498a7eea039c63150a193f5a65d4ebaec0e8bbd43956f1b3",
+      "device": "Python-urllib/3.10",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T07:34:38.965Z",
+      "expiresAt": "2026-11-04T07:34:38.965Z"
+    },
+    {
+      "id": "sess_1791197831148_8dc114",
+      "userId": "usr_demo_tester",
+      "token": "981f86a6328ebfeedadc3598de32f358692fb8057935b3f86566687a4d949d58",
+      "device": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T10:57:11.148Z",
+      "expiresAt": "2026-11-04T10:57:11.148Z"
+    },
+    {
+      "id": "sess_1791197885498_f371f5",
+      "userId": "usr_admin_root",
+      "token": "5ce42b69a3c136ede70c4c10e2560fb379338ca06e6f460013dbc88507ebc11c",
+      "device": "node",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T10:58:05.498Z",
+      "expiresAt": "2026-11-04T10:58:05.498Z"
+    },
+    {
+      "id": "sess_1791198073103_c989fe",
+      "userId": "usr_1791185504106_d799f4",
+      "token": "85c21f742731bce6f91b7829d7b09bda47d9334a8d0c513650e44568edb7a5e5",
+      "device": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0",
+      "ip": "127.0.0.1",
+      "createdAt": "2026-10-05T11:01:13.103Z",
+      "expiresAt": "2026-11-04T11:01:13.103Z"
+    }
+  ],
+  "wallets": {
+    "usr_admin_root": {
+      "userId": "usr_admin_root",
+      "availableBalance": 48626.600000000006,
+      "pendingBalance": 0,
+      "totalDeposited": 60000,
+      "totalWithdrawn": 0,
+      "totalRewards": 3576.6,
+      "updatedAt": "2026-10-05T07:26:47.296Z",
+      "participatingBalance": 10000
+    },
+    "usr_demo_tester": {
+      "userId": "usr_demo_tester",
+      "availableBalance": 1391.5,
+      "pendingBalance": 0,
+      "totalDeposited": 13500,
+      "totalWithdrawn": 12615,
+      "totalRewards": 506.5,
+      "updatedAt": "2026-10-05T07:27:05.875Z",
+      "participatingBalance": 0
+    },
+    "usr_1791185504106_d799f4": {
+      "userId": "usr_1791185504106_d799f4",
+      "availableBalance": 24,
+      "participatingBalance": 0,
+      "pendingBalance": 0,
+      "totalDeposited": 0,
+      "totalWithdrawn": 0,
+      "totalRewards": 24,
+      "updatedAt": "2026-10-05T11:01:47.691Z"
+    }
+  },
+  "transactions": [
+    {
+      "id": "tx_1791198107691_024c1ba8",
+      "userId": "usr_1791185504106_d799f4",
+      "amount": 8,
+      "type": "AD_REWARD",
+      "status": "SUCCESS",
+      "description": "AdMob Rewarded Ad Bonus (ca-app-pub-3940256099942544/5224354917)",
+      "referenceId": "ad_1791198107691_fa6275",
+      "balanceAfter": 24,
+      "createdAt": "2026-10-05T11:01:47.691Z",
+      "updatedAt": "2026-10-05T11:01:47.691Z"
+    },
+    {
+      "id": "tx_1791185573957_387b91d3",
+      "userId": "usr_1791185504106_d799f4",
+      "amount": 8,
+      "type": "AD_REWARD",
+      "status": "SUCCESS",
+      "description": "AdMob Rewarded Ad Bonus (ca-app-pub-3940256099942544/5224354917)",
+      "referenceId": "ad_1791185573957_a3774d",
+      "balanceAfter": 16,
+      "createdAt": "2026-10-05T07:32:53.957Z",
+      "updatedAt": "2026-10-05T07:32:53.957Z"
+    },
+    {
+      "id": "tx_1791185529577_f6029d0f",
+      "userId": "usr_1791185504106_d799f4",
+      "amount": 8,
+      "type": "AD_REWARD",
+      "status": "SUCCESS",
+      "description": "AdMob Rewarded Ad Bonus (ca-app-pub-3940256099942544/5224354917)",
+      "referenceId": "ad_1791185529577_b7429c",
+      "balanceAfter": 8,
+      "createdAt": "2026-10-05T07:32:09.578Z",
+      "updatedAt": "2026-10-05T07:32:09.578Z"
+    },
+    {
+      "id": "tx_1791185225875_60eb8f3e",
+      "userId": "usr_demo_tester",
+      "amount": 58,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹58 Reward, ₹1000 Principal Returned)",
+      "referenceId": "sess_1791184440641_3918e4",
+      "balanceAfter": 1391.5,
+      "createdAt": "2026-10-05T07:27:05.875Z",
+      "updatedAt": "2026-10-05T07:27:05.875Z"
+    },
+    {
+      "id": "tx_1791185207296_10ebc127",
+      "userId": "usr_admin_root",
+      "amount": 8,
+      "type": "AD_REWARD",
+      "status": "SUCCESS",
+      "description": "AdMob Rewarded Ad Bonus (ca-app-pub-3940256099942544/5224354917)",
+      "referenceId": "ad_1791185207296_d20270",
+      "balanceAfter": 48626.600000000006,
+      "createdAt": "2026-10-05T07:26:47.296Z",
+      "updatedAt": "2026-10-05T07:26:47.296Z"
+    },
+    {
+      "id": "tx_1791185191169_db3fddf9",
+      "userId": "usr_demo_tester",
+      "amount": 300,
+      "type": "WITHDRAWAL",
+      "status": "SUCCESS",
+      "description": "Withdrawal Request (wth_1791185191169_490178) to 8901",
+      "referenceId": "wth_1791185191169_490178",
+      "balanceAfter": 275.5,
+      "createdAt": "2026-10-05T07:26:31.169Z",
+      "updatedAt": "2026-10-05T07:26:45.846Z"
+    },
+    {
+      "id": "tx_1791185130053_15efd641",
+      "userId": "usr_admin_root",
+      "amount": 10000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791185130053_62ac3a",
+      "balanceAfter": 48618.600000000006,
+      "createdAt": "2026-10-05T07:25:30.053Z",
+      "updatedAt": "2026-10-05T07:25:30.053Z"
+    },
+    {
+      "id": "tx_1791185085867_ea6db26c",
+      "userId": "usr_admin_root",
+      "amount": 580,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹580 Reward, ₹10000 Principal Returned)",
+      "referenceId": "sess_1791185079033_aeaf26",
+      "balanceAfter": 58618.600000000006,
+      "createdAt": "2026-10-05T07:24:45.867Z",
+      "updatedAt": "2026-10-05T07:24:45.867Z"
+    },
+    {
+      "id": "tx_1791185079033_03cc1670",
+      "userId": "usr_admin_root",
+      "amount": 10000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791185079033_aeaf26",
+      "balanceAfter": 47458.600000000006,
+      "createdAt": "2026-10-05T07:24:39.033Z",
+      "updatedAt": "2026-10-05T07:24:39.033Z"
+    },
+    {
+      "id": "tx_1791185074434_073cb8e2",
+      "userId": "usr_admin_root",
+      "amount": 58,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹58 Reward, ₹1000 Principal Returned)",
+      "referenceId": "sess_1791185064319_ca566a",
+      "balanceAfter": 57458.600000000006,
+      "createdAt": "2026-10-05T07:24:34.435Z",
+      "updatedAt": "2026-10-05T07:24:34.435Z"
+    },
+    {
+      "id": "tx_1791185064319_4305db51",
+      "userId": "usr_admin_root",
+      "amount": 1000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791185064319_ca566a",
+      "balanceAfter": 56342.600000000006,
+      "createdAt": "2026-10-05T07:24:24.319Z",
+      "updatedAt": "2026-10-05T07:24:24.319Z"
+    },
+    {
+      "id": "tx_1791184895098_611dcae8",
+      "userId": "usr_admin_root",
+      "amount": 58,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹58 Reward, ₹1000 Principal Returned)",
+      "referenceId": "sess_1791184891941_e08986",
+      "balanceAfter": 57342.600000000006,
+      "createdAt": "2026-10-05T07:21:35.098Z",
+      "updatedAt": "2026-10-05T07:21:35.098Z"
+    },
+    {
+      "id": "tx_1791184891941_c8ee1a98",
+      "userId": "usr_admin_root",
+      "amount": 1000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791184891941_e08986",
+      "balanceAfter": 56226.600000000006,
+      "createdAt": "2026-10-05T07:21:31.941Z",
+      "updatedAt": "2026-10-05T07:21:31.941Z"
+    },
+    {
+      "id": "tx_1791184772050_c08938cd",
+      "userId": "usr_demo_tester",
+      "amount": 500,
+      "type": "WITHDRAWAL",
+      "status": "SUCCESS",
+      "description": "Withdrawal Request (wth_1791184772050_f7acb6) to 8901",
+      "referenceId": "wth_1791184772050_f7acb6",
+      "balanceAfter": 575.5,
+      "createdAt": "2026-10-05T07:19:32.050Z",
+      "updatedAt": "2026-10-05T07:20:14.716Z"
+    },
+    {
+      "id": "tx_1791184440641_7b5be619",
+      "userId": "usr_demo_tester",
+      "amount": 1000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791184440641_3918e4",
+      "balanceAfter": 1075.5,
+      "createdAt": "2026-10-05T07:14:00.641Z",
+      "updatedAt": "2026-10-05T07:14:00.641Z"
+    },
+    {
+      "id": "tx_1791184422826_70c89017",
+      "userId": "usr_demo_tester",
+      "amount": 500,
+      "type": "RECHARGE",
+      "status": "SUCCESS",
+      "description": "Wallet Recharge via Razorpay UPI/NetBanking (pay_1791184423122_yro93m)",
+      "referenceId": "order_1791184420373_19a2654b",
+      "balanceAfter": 2075.5,
+      "createdAt": "2026-10-05T07:13:42.826Z",
+      "updatedAt": "2026-10-05T07:13:42.826Z"
+    },
+    {
+      "id": "tx_1791184316381_9802ce17",
+      "userId": "usr_admin_root",
+      "amount": 580,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹580 Reward, ₹10000 Principal Returned)",
+      "referenceId": "sess_1791184284647_9367fb",
+      "balanceAfter": 57226.600000000006,
+      "createdAt": "2026-10-05T07:11:56.381Z",
+      "updatedAt": "2026-10-05T07:11:56.381Z"
+    },
+    {
+      "id": "tx_1791184287947_381c353b",
+      "userId": "usr_demo_tester",
+      "amount": 500,
+      "type": "WITHDRAWAL",
+      "status": "SUCCESS",
+      "description": "Withdrawal Request (wth_1791184287947_4d440f) to prince@okhdfcbank",
+      "referenceId": "wth_1791184287947_4d440f",
+      "balanceAfter": 1575.5,
+      "createdAt": "2026-10-05T07:11:27.947Z",
+      "updatedAt": "2026-10-05T07:11:34.451Z"
+    },
+    {
+      "id": "tx_1791184284648_12289ef2",
+      "userId": "usr_admin_root",
+      "amount": 10000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791184284647_9367fb",
+      "balanceAfter": 46066.600000000006,
+      "createdAt": "2026-10-05T07:11:24.648Z",
+      "updatedAt": "2026-10-05T07:11:24.648Z"
+    },
+    {
+      "id": "tx_1791184280096_8c978020",
+      "userId": "usr_admin_root",
+      "amount": 5.8,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹5.8 Reward, ₹100 Principal Returned)",
+      "referenceId": "sess_1791184106321_4e35b7",
+      "balanceAfter": 56066.600000000006,
+      "createdAt": "2026-10-05T07:11:20.096Z",
+      "updatedAt": "2026-10-05T07:11:20.096Z"
+    },
+    {
+      "id": "tx_1791184234128_6be65922",
+      "userId": "usr_admin_root",
+      "amount": 10000,
+      "type": "RECHARGE",
+      "status": "SUCCESS",
+      "description": "Wallet Recharge via Razorpay UPI/NetBanking (pay_1791184234428_9qoxz6)",
+      "referenceId": "order_1791184229656_fa9e187f",
+      "balanceAfter": 55955,
+      "createdAt": "2026-10-05T07:10:34.128Z",
+      "updatedAt": "2026-10-05T07:10:34.128Z"
+    },
+    {
+      "id": "tx_1791184131998_eda7fd5d",
+      "userId": "usr_admin_root",
+      "amount": 2.5,
+      "type": "AD_REWARD",
+      "status": "SUCCESS",
+      "description": "AdMob Rewarded Ad Bonus (ca-app-pub-3940256099942544/5224354917)",
+      "referenceId": "ad_1791184131997_24b327",
+      "balanceAfter": 45955,
+      "createdAt": "2026-10-05T07:08:51.998Z",
+      "updatedAt": "2026-10-05T07:08:51.998Z"
+    },
+    {
+      "id": "tx_1791184106321_a6420d7b",
+      "userId": "usr_admin_root",
+      "amount": 100,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791184106321_4e35b7",
+      "balanceAfter": 45952.5,
+      "createdAt": "2026-10-05T07:08:26.321Z",
+      "updatedAt": "2026-10-05T07:08:26.321Z"
+    },
+    {
+      "id": "tx_1791184020894_be0bc9ce",
+      "userId": "usr_admin_root",
+      "amount": -4950,
+      "type": "ADJUSTMENT",
+      "status": "SUCCESS",
+      "description": "Manual Admin Adjustment: dmnhedfnreifdjnkn demnfije jn (by System Administrator)",
+      "referenceId": "adj_1791184020894",
+      "balanceAfter": 46052.5,
+      "createdAt": "2026-10-05T07:07:00.894Z",
+      "updatedAt": "2026-10-05T07:07:00.894Z"
+    },
+    {
+      "id": "tx_1791183722062_e5fbcbf3",
+      "userId": "usr_admin_root",
+      "amount": 250,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹250 Reward, ₹10000 Principal Returned)",
+      "referenceId": "sess_1791183700337_195c0f",
+      "balanceAfter": 51002.5,
+      "createdAt": "2026-10-05T07:02:02.062Z",
+      "updatedAt": "2026-10-05T07:02:02.062Z"
+    },
+    {
+      "id": "tx_1791183700337_36518ede",
+      "userId": "usr_admin_root",
+      "amount": 10000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791183700337_195c0f",
+      "balanceAfter": 40502.5,
+      "createdAt": "2026-10-05T07:01:40.337Z",
+      "updatedAt": "2026-10-05T07:01:40.337Z"
+    },
+    {
+      "id": "tx_1791183692735_afb485b9",
+      "userId": "usr_admin_root",
+      "amount": 250,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹250 Reward, ₹10000 Principal Returned)",
+      "referenceId": "sess_1791183648925_16fde5",
+      "balanceAfter": 50502.5,
+      "createdAt": "2026-10-05T07:01:32.736Z",
+      "updatedAt": "2026-10-05T07:01:32.736Z"
+    },
+    {
+      "id": "tx_1791183664842_d847eb7e",
+      "userId": "usr_demo_tester",
+      "amount": 25,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Session Reward (+₹25 Reward, ₹1000 Principal Returned)",
+      "referenceId": "sess_1791183647265_94b93c",
+      "balanceAfter": 2075.5,
+      "createdAt": "2026-10-05T07:01:04.842Z",
+      "updatedAt": "2026-10-05T07:01:04.842Z"
+    },
+    {
+      "id": "tx_1791183648925_b12c57e5",
+      "userId": "usr_admin_root",
+      "amount": 10000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791183648925_16fde5",
+      "balanceAfter": 40002.5,
+      "createdAt": "2026-10-05T07:00:48.925Z",
+      "updatedAt": "2026-10-05T07:00:48.925Z"
+    },
+    {
+      "id": "tx_1791183647266_317c9e03",
+      "userId": "usr_demo_tester",
+      "amount": 1000,
+      "type": "SESSION_PARTICIPATION",
+      "status": "SUCCESS",
+      "description": "24-Hour Reward Session Participation Reserved (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791183647265_94b93c",
+      "balanceAfter": 1025.5,
+      "createdAt": "2026-10-05T07:00:47.266Z",
+      "updatedAt": "2026-10-05T07:00:47.266Z"
+    },
+    {
+      "id": "tx_1791183637664_b71e9437",
+      "userId": "usr_demo_tester",
+      "amount": 2000,
+      "type": "RECHARGE",
+      "status": "SUCCESS",
+      "description": "Wallet Recharge via Razorpay UPI/NetBanking (pay_test_succ_1001)",
+      "referenceId": "order_1791183618594_6f384e6e",
+      "balanceAfter": 2025.5,
+      "createdAt": "2026-10-05T07:00:37.664Z",
+      "updatedAt": "2026-10-05T07:00:37.664Z"
+    },
+    {
+      "id": "tx_1791183558228_4bb85b7b",
+      "userId": "usr_admin_root",
+      "amount": 2.5,
+      "type": "AD_REWARD",
+      "status": "SUCCESS",
+      "description": "AdMob Rewarded Ad Bonus (ca-app-pub-3940256099942544/5224354917)",
+      "referenceId": "ad_1791183558228_c8f8dd",
+      "balanceAfter": 50002.5,
+      "createdAt": "2026-10-05T06:59:18.228Z",
+      "updatedAt": "2026-10-05T06:59:18.228Z"
+    },
+    {
+      "id": "tx_1791183027627_d8b4e23f",
+      "userId": "usr_demo_tester",
+      "amount": 25,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Campaign Reward (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791183016915_067e2c",
+      "balanceAfter": 25.5,
+      "createdAt": "2026-10-05T06:50:27.627Z",
+      "updatedAt": "2026-10-05T06:50:27.627Z"
+    },
+    {
+      "id": "tx_1791183003809_fc2436bb",
+      "userId": "usr_demo_tester",
+      "amount": 11315,
+      "type": "WITHDRAWAL",
+      "status": "SUCCESS",
+      "description": "Withdrawal Request (wth_1791183003809_02294d) to prince@kotak",
+      "referenceId": "wth_1791183003809_02294d",
+      "balanceAfter": 0.5,
+      "createdAt": "2026-10-05T06:50:03.809Z",
+      "updatedAt": "2026-10-05T07:10:44.041Z"
+    },
+    {
+      "id": "tx_1791182946290_70254d21",
+      "userId": "usr_demo_tester",
+      "amount": 10000,
+      "type": "RECHARGE",
+      "status": "SUCCESS",
+      "description": "Wallet Recharge via Razorpay UPI/NetBanking (pay_1791182946397_8vwyvl)",
+      "referenceId": "order_1791182934458_fcb65a43",
+      "balanceAfter": 11315.5,
+      "createdAt": "2026-10-05T06:49:06.290Z",
+      "updatedAt": "2026-10-05T06:49:06.290Z"
+    },
+    {
+      "id": "tx_1791182882015_76111f93",
+      "userId": "usr_demo_tester",
+      "amount": 32,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Campaign Reward (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791182877340_bc4d0e",
+      "balanceAfter": 1315.5,
+      "createdAt": "2026-10-05T06:48:02.015Z",
+      "updatedAt": "2026-10-05T06:48:02.015Z"
+    },
+    {
+      "id": "tx_1791182875648_18ece71a",
+      "userId": "usr_demo_tester",
+      "amount": 31,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "24-Hour Campaign Reward (24-Hour Active Engagement Yield)",
+      "referenceId": "sess_1791182858591_77d15a",
+      "balanceAfter": 1283.5,
+      "createdAt": "2026-10-05T06:47:55.648Z",
+      "updatedAt": "2026-10-05T06:47:55.648Z"
+    },
+    {
+      "id": "tx_1791182848100_76ff45a9",
+      "userId": "usr_demo_tester",
+      "amount": 2.5,
+      "type": "AD_REWARD",
+      "status": "SUCCESS",
+      "description": "AdMob Rewarded Ad Bonus (ca-app-pub-3940256099942544/5224354917)",
+      "referenceId": "ad_1791182848100_a06b41",
+      "balanceAfter": 1252.5,
+      "createdAt": "2026-10-05T06:47:28.101Z",
+      "updatedAt": "2026-10-05T06:47:28.101Z"
+    },
+    {
+      "id": "tx_seed_initial_recharge",
+      "userId": "usr_demo_tester",
+      "amount": 1000,
+      "type": "RECHARGE",
+      "status": "SUCCESS",
+      "description": "Initial Wallet Recharge via Razorpay UPI",
+      "referenceId": "pay_rzp_seed_1001",
+      "balanceAfter": 1000,
+      "createdAt": "2026-10-02T06:41:34.758Z",
+      "updatedAt": "2026-10-02T06:41:34.758Z"
+    },
+    {
+      "id": "tx_seed_reward_bonus",
+      "userId": "usr_demo_tester",
+      "amount": 250,
+      "type": "REWARD",
+      "status": "SUCCESS",
+      "description": "Verified 24-Hour Active Engagement Reward",
+      "referenceId": "sess_seed_001",
+      "balanceAfter": 1250,
+      "createdAt": "2026-10-04T06:41:34.758Z",
+      "updatedAt": "2026-10-04T06:41:34.758Z"
+    }
+  ],
+  "rechargeOrders": [
+    {
+      "id": "order_1791182934458_fcb65a43",
+      "userId": "usr_demo_tester",
+      "amount": 10000,
+      "currency": "INR",
+      "status": "SUCCESS",
+      "createdAt": "2026-10-05T06:48:54.458Z",
+      "updatedAt": "2026-10-05T06:49:06.289Z",
+      "paymentId": "pay_1791182946397_8vwyvl"
+    },
+    {
+      "id": "order_1791183314429_be3aaadb",
+      "userId": "usr_demo_tester",
+      "amount": 100,
+      "currency": "INR",
+      "status": "INITIATED",
+      "createdAt": "2026-10-05T06:55:14.429Z",
+      "updatedAt": "2026-10-05T06:55:14.429Z"
+    },
+    {
+      "id": "order_1791183314817_9fe19cb7",
+      "userId": "usr_demo_tester",
+      "amount": 100,
+      "currency": "INR",
+      "status": "INITIATED",
+      "createdAt": "2026-10-05T06:55:14.817Z",
+      "updatedAt": "2026-10-05T06:55:14.817Z"
+    },
+    {
+      "id": "order_1791183618594_6f384e6e",
+      "userId": "usr_demo_tester",
+      "amount": 2000,
+      "currency": "INR",
+      "status": "SUCCESS",
+      "createdAt": "2026-10-05T07:00:18.594Z",
+      "updatedAt": "2026-10-05T07:00:37.664Z",
+      "paymentId": "pay_test_succ_1001"
+    },
+    {
+      "id": "order_1791184229656_fa9e187f",
+      "userId": "usr_admin_root",
+      "amount": 10000,
+      "currency": "INR",
+      "status": "SUCCESS",
+      "createdAt": "2026-10-05T07:10:29.656Z",
+      "updatedAt": "2026-10-05T07:10:34.128Z",
+      "paymentId": "pay_1791184234428_9qoxz6"
+    },
+    {
+      "id": "order_1791184342182_2782848b",
+      "userId": "usr_demo_tester",
+      "amount": 100,
+      "currency": "INR",
+      "status": "INITIATED",
+      "createdAt": "2026-10-05T07:12:22.182Z",
+      "updatedAt": "2026-10-05T07:12:22.182Z"
+    },
+    {
+      "id": "order_1791184342548_150ebc72",
+      "userId": "usr_demo_tester",
+      "amount": 100,
+      "currency": "INR",
+      "status": "INITIATED",
+      "createdAt": "2026-10-05T07:12:22.548Z",
+      "updatedAt": "2026-10-05T07:12:22.548Z"
+    },
+    {
+      "id": "order_1791184412374_d870344a",
+      "userId": "usr_demo_tester",
+      "amount": 500,
+      "currency": "INR",
+      "status": "INITIATED",
+      "createdAt": "2026-10-05T07:13:32.374Z",
+      "updatedAt": "2026-10-05T07:13:32.374Z"
+    },
+    {
+      "id": "order_1791184420373_19a2654b",
+      "userId": "usr_demo_tester",
+      "amount": 500,
+      "currency": "INR",
+      "status": "SUCCESS",
+      "createdAt": "2026-10-05T07:13:40.374Z",
+      "updatedAt": "2026-10-05T07:13:42.826Z",
+      "paymentId": "pay_1791184423122_yro93m"
+    },
+    {
+      "id": "order_1791184430392_91f343c1",
+      "userId": "usr_demo_tester",
+      "amount": 100,
+      "currency": "INR",
+      "status": "INITIATED",
+      "createdAt": "2026-10-05T07:13:50.392Z",
+      "updatedAt": "2026-10-05T07:13:50.392Z"
+    },
+    {
+      "id": "order_1791184430762_549893e3",
+      "userId": "usr_demo_tester",
+      "amount": 100,
+      "currency": "INR",
+      "status": "INITIATED",
+      "createdAt": "2026-10-05T07:13:50.762Z",
+      "updatedAt": "2026-10-05T07:13:50.762Z"
+    },
+    {
+      "id": "order_1791198823511_c812a3e5",
+      "userId": "usr_1791185504106_d799f4",
+      "amount": 500,
+      "currency": "INR",
+      "status": "INITIATED",
+      "createdAt": "2026-10-05T11:13:43.511Z",
+      "updatedAt": "2026-10-05T11:13:43.511Z"
+    }
+  ],
+  "withdrawals": [
+    {
+      "id": "wth_1791185191169_490178",
+      "userId": "usr_demo_tester",
+      "userName": "Prince Sharma",
+      "userMobile": "9999988888",
+      "amount": 300,
+      "fee": 0,
+      "netAmount": 300,
+      "accountHolderName": "Prince Sharma",
+      "bankAccountNumber": "912345678901",
+      "ifsc": "HDFC0001234",
+      "status": "COMPLETED",
+      "requestedAt": "2026-10-05T07:26:31.169Z",
+      "updatedAt": "2026-10-05T07:26:45.846Z",
+      "adminNote": "Settlement complete",
+      "processedBy": "System Administrator",
+      "payoutReferenceId": "UTR_BANK_20261005"
+    },
+    {
+      "id": "wth_1791184772050_f7acb6",
+      "userId": "usr_demo_tester",
+      "userName": "Prince Sharma",
+      "userMobile": "9999988888",
+      "amount": 500,
+      "fee": 0,
+      "netAmount": 500,
+      "accountHolderName": "Prince Sharma",
+      "bankAccountNumber": "912345678901",
+      "ifsc": "HDFC0001234",
+      "status": "COMPLETED",
+      "requestedAt": "2026-10-05T07:19:32.050Z",
+      "updatedAt": "2026-10-05T07:20:14.716Z",
+      "adminNote": "Processed successfully",
+      "processedBy": "System Administrator",
+      "payoutReferenceId": "UTR_BANK_TEST_999"
+    },
+    {
+      "id": "wth_1791184287947_4d440f",
+      "userId": "usr_demo_tester",
+      "userName": "Prince Sharma",
+      "userMobile": "9999988888",
+      "amount": 500,
+      "fee": 0,
+      "netAmount": 500,
+      "accountHolderName": "Prince Sharma",
+      "bankAccountNumber": "N/A",
+      "ifsc": "N/A",
+      "upiId": "prince@okhdfcbank",
+      "status": "COMPLETED",
+      "requestedAt": "2026-10-05T07:11:27.947Z",
+      "updatedAt": "2026-10-05T07:11:34.451Z",
+      "processedBy": "System Administrator",
+      "payoutReferenceId": "UPI_TX_98721",
+      "adminNote": "Instant UPI Transfer Successful"
+    },
+    {
+      "id": "wth_1791183003809_02294d",
+      "userId": "usr_demo_tester",
+      "userName": "Prince Sharma",
+      "userMobile": "9999988888",
+      "amount": 11315,
+      "fee": 0,
+      "netAmount": 11315,
+      "accountHolderName": "Prince Sharma",
+      "bankAccountNumber": "N/A",
+      "ifsc": "N/A",
+      "upiId": "prince@kotak",
+      "status": "COMPLETED",
+      "requestedAt": "2026-10-05T06:50:03.809Z",
+      "updatedAt": "2026-10-05T07:10:44.041Z",
+      "adminNote": "IMPS Payout Successful",
+      "processedBy": "System Administrator",
+      "payoutReferenceId": "UTR_BANK_291029"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "cmp_fintech_24h_loyalty",
+      "name": "24-Hour Active Engagement Yield",
+      "description": "Daily activity reward session. Complete 24 hours of verified platform participation to receive authorized promotional cashback.",
+      "minAmount": 100,
+      "maxAmount": 10000,
+      "rewardRatePercentage": 5.8,
+      "durationHours": 24,
+      "dailyLimitPerUser": 1,
+      "startDate": "2026-09-20T06:41:34.758Z",
+      "endDate": "2027-04-03T06:41:34.758Z",
+      "status": "ACTIVE",
+      "legalTerms": "Promotional loyalty yield valid for verified accounts in good standing. Session runs continuously for 24 server hours. Claims must be confirmed before subsequent session activation. Not guaranteed interest or bank deposit yield."
+    }
+  ],
+  "rewardSessions": [
+    {
+      "id": "sess_1791185130053_62ac3a",
+      "userId": "usr_admin_root",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 10000,
+      "startTime": "2026-10-05T07:25:30.053Z",
+      "endTime": "2026-10-05T07:34:33.976Z",
+      "status": "ACTIVE",
+      "rewardAmount": 580,
+      "isEligible": true,
+      "updatedAt": "2026-10-05T07:34:38.976Z"
+    },
+    {
+      "id": "sess_1791185079033_aeaf26",
+      "userId": "usr_admin_root",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 10000,
+      "startTime": "2026-10-05T07:24:39.033Z",
+      "endTime": "2026-10-05T07:24:42.465Z",
+      "status": "COMPLETED",
+      "rewardAmount": 580,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T07:24:45.867Z"
+    },
+    {
+      "id": "sess_1791185064319_ca566a",
+      "userId": "usr_admin_root",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 1000,
+      "startTime": "2026-10-05T07:24:24.319Z",
+      "endTime": "2026-10-05T07:24:32.188Z",
+      "status": "COMPLETED",
+      "rewardAmount": 58,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T07:24:34.434Z"
+    },
+    {
+      "id": "sess_1791184891941_e08986",
+      "userId": "usr_admin_root",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 1000,
+      "startTime": "2026-10-05T07:21:31.941Z",
+      "endTime": "2026-10-05T07:21:32.651Z",
+      "status": "COMPLETED",
+      "rewardAmount": 58,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T07:21:35.098Z"
+    },
+    {
+      "id": "sess_1791184440641_3918e4",
+      "userId": "usr_demo_tester",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 1000,
+      "startTime": "2026-10-05T07:14:00.641Z",
+      "endTime": "2026-10-05T07:26:51.146Z",
+      "status": "COMPLETED",
+      "rewardAmount": 58,
+      "isEligible": true,
+      "updatedAt": "2026-10-05T07:26:56.146Z",
+      "claimedAt": "2026-10-05T07:27:05.875Z"
+    },
+    {
+      "id": "sess_1791184284647_9367fb",
+      "userId": "usr_admin_root",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 10000,
+      "startTime": "2026-10-05T07:11:24.647Z",
+      "endTime": "2026-10-05T07:11:52.636Z",
+      "status": "COMPLETED",
+      "rewardAmount": 580,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T07:11:56.381Z"
+    },
+    {
+      "id": "sess_1791184106321_4e35b7",
+      "userId": "usr_admin_root",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 100,
+      "startTime": "2026-10-05T07:08:26.321Z",
+      "endTime": "2026-10-05T07:11:16.595Z",
+      "status": "COMPLETED",
+      "rewardAmount": 5.8,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T07:11:20.096Z"
+    },
+    {
+      "id": "sess_1791183700337_195c0f",
+      "userId": "usr_admin_root",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 10000,
+      "startTime": "2026-10-05T07:01:40.337Z",
+      "endTime": "2026-10-05T07:01:59.574Z",
+      "status": "COMPLETED",
+      "rewardAmount": 250,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T07:02:02.062Z"
+    },
+    {
+      "id": "sess_1791183648925_16fde5",
+      "userId": "usr_admin_root",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 10000,
+      "startTime": "2026-10-05T07:00:48.925Z",
+      "endTime": "2026-10-05T07:01:22.510Z",
+      "status": "COMPLETED",
+      "rewardAmount": 250,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T07:01:32.735Z"
+    },
+    {
+      "id": "sess_1791183647265_94b93c",
+      "userId": "usr_demo_tester",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "participationAmount": 1000,
+      "startTime": "2026-10-05T07:00:47.265Z",
+      "endTime": "2026-10-05T07:00:57.558Z",
+      "status": "COMPLETED",
+      "rewardAmount": 25,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T07:01:04.842Z"
+    },
+    {
+      "id": "sess_1791183016915_067e2c",
+      "userId": "usr_demo_tester",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "startTime": "2026-10-05T06:50:16.915Z",
+      "endTime": "2026-10-05T06:50:25.421Z",
+      "status": "COMPLETED",
+      "rewardAmount": 25,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T06:50:27.627Z"
+    },
+    {
+      "id": "sess_1791182877340_bc4d0e",
+      "userId": "usr_demo_tester",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "startTime": "2026-10-05T06:47:57.340Z",
+      "endTime": "2026-10-05T06:47:59.894Z",
+      "status": "COMPLETED",
+      "rewardAmount": 32,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T06:48:02.015Z"
+    },
+    {
+      "id": "sess_1791182858591_77d15a",
+      "userId": "usr_demo_tester",
+      "campaignId": "cmp_fintech_24h_loyalty",
+      "campaignName": "24-Hour Active Engagement Yield",
+      "startTime": "2026-10-05T06:47:38.590Z",
+      "endTime": "2026-10-05T06:47:50.590Z",
+      "status": "COMPLETED",
+      "rewardAmount": 31,
+      "isEligible": true,
+      "claimedAt": "2026-10-05T06:47:55.648Z"
+    }
+  ],
+  "adWatches": [
+    {
+      "id": "ad_1791198107691_fa6275",
+      "userId": "usr_1791185504106_d799f4",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "rewardAmount": 8,
+      "completed": true,
+      "timestamp": "2026-10-05T11:01:47.691Z",
+      "verified": true
+    },
+    {
+      "id": "ad_1791185573957_a3774d",
+      "userId": "usr_1791185504106_d799f4",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "rewardAmount": 8,
+      "completed": true,
+      "timestamp": "2026-10-05T07:32:53.957Z",
+      "verified": true
+    },
+    {
+      "id": "ad_1791185529577_b7429c",
+      "userId": "usr_1791185504106_d799f4",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "rewardAmount": 8,
+      "completed": true,
+      "timestamp": "2026-10-05T07:32:09.577Z",
+      "verified": true
+    },
+    {
+      "id": "ad_1791185207296_d20270",
+      "userId": "usr_admin_root",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "rewardAmount": 8,
+      "completed": true,
+      "timestamp": "2026-10-05T07:26:47.296Z",
+      "verified": true
+    },
+    {
+      "id": "ad_1791184131997_24b327",
+      "userId": "usr_admin_root",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "rewardAmount": 2.5,
+      "completed": true,
+      "timestamp": "2026-10-05T07:08:51.998Z",
+      "verified": true
+    },
+    {
+      "id": "ad_1791183558228_c8f8dd",
+      "userId": "usr_admin_root",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "rewardAmount": 2.5,
+      "completed": true,
+      "timestamp": "2026-10-05T06:59:18.228Z",
+      "verified": true
+    },
+    {
+      "id": "ad_1791182848100_a06b41",
+      "userId": "usr_demo_tester",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "rewardAmount": 2.5,
+      "completed": true,
+      "timestamp": "2026-10-05T06:47:28.100Z",
+      "verified": true
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "audit_1791185205847_79804c",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "WITHDRAWAL_STATUS_CHANGE",
+      "target": "withdrawal:wth_1791185191169_490178",
+      "oldValue": "PROCESSING",
+      "newValue": "COMPLETED",
+      "reason": "Settlement complete",
+      "timestamp": "2026-10-05T07:26:45.847Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791185197874_42c998",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "WITHDRAWAL_STATUS_CHANGE",
+      "target": "withdrawal:wth_1791185191169_490178",
+      "oldValue": "REQUESTED",
+      "newValue": "PROCESSING",
+      "reason": "Batch 129 sent to bank",
+      "timestamp": "2026-10-05T07:26:37.874Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184825126_a711e5",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "ADMOB_CONFIG_UPDATE",
+      "target": "settings:admob",
+      "oldValue": "{\"reward\":5,\"dailyMax\":15,\"cooldown\":25}",
+      "newValue": "{\"reward\":8,\"dailyMax\":15,\"cooldown\":25}",
+      "reason": "Festival bonus reward update",
+      "timestamp": "2026-10-05T07:20:25.126Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184814717_e8767b",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "WITHDRAWAL_STATUS_CHANGE",
+      "target": "withdrawal:wth_1791184772050_f7acb6",
+      "oldValue": "PROCESSING",
+      "newValue": "COMPLETED",
+      "reason": "Processed successfully",
+      "timestamp": "2026-10-05T07:20:14.717Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184807200_171a0e",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "WITHDRAWAL_STATUS_CHANGE",
+      "target": "withdrawal:wth_1791184772050_f7acb6",
+      "oldValue": "REQUESTED",
+      "newValue": "PROCESSING",
+      "reason": "Processing by admin",
+      "timestamp": "2026-10-05T07:20:07.200Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184294452_ab3e5f",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "WITHDRAWAL_STATUS_CHANGE",
+      "target": "withdrawal:wth_1791184287947_4d440f",
+      "oldValue": "REQUESTED",
+      "newValue": "COMPLETED",
+      "reason": "Instant UPI Transfer Successful",
+      "timestamp": "2026-10-05T07:11:34.452Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184255155_da026d",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "ADMOB_CONFIG_UPDATE",
+      "target": "settings:admob",
+      "oldValue": "{\"reward\":2.5,\"dailyMax\":15,\"cooldown\":30}",
+      "newValue": "{\"reward\":5,\"dailyMax\":15,\"cooldown\":25}",
+      "reason": "Increased ad reward to ₹5.0",
+      "timestamp": "2026-10-05T07:10:55.155Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184244042_34d3ed",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "WITHDRAWAL_STATUS_CHANGE",
+      "target": "withdrawal:wth_1791183003809_02294d",
+      "oldValue": "PROCESSING",
+      "newValue": "COMPLETED",
+      "reason": "IMPS Payout Successful",
+      "timestamp": "2026-10-05T07:10:44.042Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184236095_df4fdd",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "WITHDRAWAL_STATUS_CHANGE",
+      "target": "withdrawal:wth_1791183003809_02294d",
+      "oldValue": "REQUESTED",
+      "newValue": "PROCESSING",
+      "reason": "Bank gateway processing initiated",
+      "timestamp": "2026-10-05T07:10:36.095Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184065620_72049a",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "SUPPORT_TICKET_REPLY",
+      "target": "ticket:tkt_1791183075835_ab9ca2",
+      "oldValue": "OPEN",
+      "newValue": "RESOLVED",
+      "reason": "Payment verified and reconciled with Razorpay bank gateway.",
+      "timestamp": "2026-10-05T07:07:45.621Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791184020895_ed5cfb",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "WALLET_ADJUSTMENT",
+      "target": "user:usr_admin_root",
+      "oldValue": "₹51002.5",
+      "newValue": "₹46052.5",
+      "reason": "dmnhedfnreifdjnkn demnfije jn",
+      "timestamp": "2026-10-05T07:07:00.895Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791183944155_4d302b",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "CAMPAIGN_CONFIG_UPDATE",
+      "target": "campaign:cmp_fintech_24h_loyalty",
+      "oldValue": "{\"rate\":5.8,\"status\":\"ACTIVE\",\"hours\":24}",
+      "newValue": "{\"rate\":5.8,\"status\":\"ACTIVE\",\"hours\":24}",
+      "reason": "Reward rule adjustment",
+      "timestamp": "2026-10-05T07:05:44.155Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791183881518_1b0ec6",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "CAMPAIGN_CONFIG_UPDATE",
+      "target": "campaign:cmp_fintech_24h_loyalty",
+      "oldValue": "{\"rate\":2.5,\"status\":\"ACTIVE\",\"hours\":24}",
+      "newValue": "{\"rate\":5.8,\"status\":\"ACTIVE\",\"hours\":24}",
+      "reason": "Reward rule adjustment",
+      "timestamp": "2026-10-05T07:04:41.518Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791183425327_10525e",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "SUPPORT_TICKET_REPLY",
+      "target": "ticket:tkt_1791183075835_ab9ca2",
+      "oldValue": "OPEN",
+      "newValue": "RESOLVED",
+      "reason": "Payment verified and reconciled with Razorpay bank gateway.",
+      "timestamp": "2026-10-05T06:57:05.327Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791183412710_02af7c",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "SYSTEM_SETTINGS_UPDATE",
+      "target": "settings:global",
+      "oldValue": "{\"appName\":\"VORA EARNING\",\"maintenanceMode\":false,\"minSupportedVersion\":\"1.0.0\",\"latestVersion\":\"1.0.0\",\"forceUpdateEnabled\":false,\"updateUrl\":\"https://play.google.com/store/apps/details?id=com.vora.earning\",\"minRechargeAmount\":100,\"maxRechargeAmount\":10000,\"minWithdrawalAmount\":200,\"maxWithdrawalAmount\":25000,\"withdrawalFeePercentage\":0,\"quickRechargeChips\":[100,250,500,1000,2000,5000,10000],\"termsAndConditions\":\"Welcome to VORA EARNING. This application is a compliant rewards and fintech loyalty platform. By accessing or using our services, you agree to comply with all applicable financial regulations, fair-play guidelines, and reward terms. No guaranteed returns or daily profits are promised. Rewards are subject to activity completion, verified transactions, and eligibility verification.\",\"privacyPolicy\":\"Your privacy is paramount at VORA EARNING. We collect minimal necessary data (mobile number, transaction identifiers, device security tokens) strictly for authentication, fraud prevention, and ledger reconciliation. Banking information is masked in the UI and encrypted in transit.\",\"refundPolicy\":\"Recharge payments verified on Razorpay that are not credited due to technical discrepancies are automatically reconciled or refunded to the original payment source within 5 to 7 banking days as per RBI guidelines.\",\"withdrawalPolicy\":\"Withdrawals are processed to verified domestic bank accounts or UPI VPA matching the registered account holder name. Payout processing takes between 1 to 24 business hours following automated compliance verification.\",\"riskDisclosure\":\"VORA EARNING does not operate as an unregistered collective investment scheme or guaranteed return deposit. Any activity rewards, promotional bonuses, or engagement incentives are discretionary marketing campaigns governed by fair usage limits.\",\"supportEmail\":\"support@voraearning.com\",\"supportPhone\":\"+91 8000 123 456\",\"adMobAppId\":\"ca-app-pub-3940256099942544~3347511713\",\"rewardedAdUnitId\":\"ca-app-pub-3940256099942544/5224354917\",\"bannerAdUnitId\":\"ca-app-pub-3940256099942544/6300978111\",\"interstitialAdUnitId\":\"ca-app-pub-3940256099942544/1033173712\",\"rewardPerAd\":2.5,\"dailyMaxAds\":15,\"cooldownSeconds\":30}",
+      "newValue": "{\"appName\":\"VORA EARNING\",\"maintenanceMode\":false,\"minSupportedVersion\":\"1.0.0\",\"latestVersion\":\"1.0.0\",\"forceUpdateEnabled\":false,\"updateUrl\":\"https://play.google.com/store/apps/details?id=com.vora.earning\",\"minRechargeAmount\":100,\"maxRechargeAmount\":10000000000,\"minWithdrawalAmount\":200,\"maxWithdrawalAmount\":25000000,\"withdrawalFeePercentage\":0,\"quickRechargeChips\":[100,250,500,1000,2000,5000,10000],\"termsAndConditions\":\"Welcome to VORA EARNING. This application is a compliant rewards and fintech loyalty platform. By accessing or using our services, you agree to comply with all applicable financial regulations, fair-play guidelines, and reward terms. No guaranteed returns or daily profits are promised. Rewards are subject to activity completion, verified transactions, and eligibility verification.\",\"privacyPolicy\":\"Your privacy is paramount at VORA EARNING. We collect minimal necessary data (mobile number, transaction identifiers, device security tokens) strictly for authentication, fraud prevention, and ledger reconciliation. Banking information is masked in the UI and encrypted in transit.\",\"refundPolicy\":\"Recharge payments verified on Razorpay that are not credited due to technical discrepancies are automatically reconciled or refunded to the original payment source within 5 to 7 banking days as per RBI guidelines.\",\"withdrawalPolicy\":\"Withdrawals are processed to verified domestic bank accounts or UPI VPA matching the registered account holder name. Payout processing takes between 1 to 24 business hours following automated compliance verification.\",\"riskDisclosure\":\"VORA EARNING does not operate as an unregistered collective investment scheme or guaranteed return deposit. Any activity rewards, promotional bonuses, or engagement incentives are discretionary marketing campaigns governed by fair usage limits.\",\"supportEmail\":\"support@voraearning.com\",\"supportPhone\":\"+91 8000 123 456\",\"adMobAppId\":\"ca-app-pub-3940256099942544~3347511713\",\"rewardedAdUnitId\":\"ca-app-pub-3940256099942544/5224354917\",\"bannerAdUnitId\":\"ca-app-pub-3940256099942544/6300978111\",\"interstitialAdUnitId\":\"ca-app-pub-3940256099942544/1033173712\",\"rewardPerAd\":2.5,\"dailyMaxAds\":15,\"cooldownSeconds\":30}",
+      "reason": "General system settings update",
+      "timestamp": "2026-10-05T06:56:52.710Z",
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit_1791183105724_57107f",
+      "adminId": "usr_admin_root",
+      "adminName": "System Administrator",
+      "action": "SUPPORT_TICKET_REPLY",
+      "target": "ticket:tkt_1791183075835_ab9ca2",
+      "oldValue": "OPEN",
+      "newValue": "RESOLVED",
+      "reason": "Payment verified and reconciled with Razorpay bank gateway.",
+      "timestamp": "2026-10-05T06:51:45.724Z",
+      "ipAddress": "127.0.0.1"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_1791198107695_09996c",
+      "userId": "usr_1791185504106_d799f4",
+      "title": "Ad Reward Credited",
+      "message": "₹8 rewarded for completed advertisement viewing.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T11:01:47.695Z"
+    },
+    {
+      "id": "notif_1791185573958_61204d",
+      "userId": "usr_1791185504106_d799f4",
+      "title": "Ad Reward Credited",
+      "message": "₹8 rewarded for completed advertisement viewing.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:32:53.958Z"
+    },
+    {
+      "id": "notif_1791185529579_08a215",
+      "userId": "usr_1791185504106_d799f4",
+      "title": "Ad Reward Credited",
+      "message": "₹8 rewarded for completed advertisement viewing.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:32:09.579Z"
+    },
+    {
+      "id": "notif_1791185504107_f15e99",
+      "userId": "usr_1791185504106_d799f4",
+      "title": "Welcome to VORA EARNING!",
+      "message": "Your account has been registered successfully. Explore 24-hour reward sessions and instant recharges.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:31:44.107Z"
+    },
+    {
+      "id": "notif_1791185225883_ab104a",
+      "userId": "usr_demo_tester",
+      "title": "24-Hour Session Completed!",
+      "message": "₹1,000 participation returned and ₹58 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:27:05.883Z"
+    },
+    {
+      "id": "notif_1791185207297_11dc39",
+      "userId": "usr_admin_root",
+      "title": "Ad Reward Credited",
+      "message": "₹8 rewarded for completed advertisement viewing.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:26:47.297Z"
+    },
+    {
+      "id": "notif_1791185205846_b281bb",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Completed",
+      "message": "₹300 has been credited to your bank/UPI account (Ref: UTR_BANK_20261005).",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:26:45.846Z"
+    },
+    {
+      "id": "notif_1791185197873_f03aa6",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Update",
+      "message": "Your withdrawal request is now processing.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:26:37.873Z"
+    },
+    {
+      "id": "notif_1791185191170_d9cacf",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Requested",
+      "message": "Withdrawal request for ₹300 (Net ₹300) received and submitted for compliance review.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:26:31.170Z"
+    },
+    {
+      "id": "notif_1791185130053_65ba48",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹10,000 participation is active. Eligible reward: ₹580.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:25:30.054Z"
+    },
+    {
+      "id": "notif_1791185085868_0a9cc3",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Completed!",
+      "message": "₹10,000 participation returned and ₹580 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:24:45.868Z"
+    },
+    {
+      "id": "notif_1791185079034_d951f0",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹10,000 participation is active. Eligible reward: ₹580.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:24:39.034Z"
+    },
+    {
+      "id": "notif_1791185074436_76e520",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Completed!",
+      "message": "₹1,000 participation returned and ₹58 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:24:34.436Z"
+    },
+    {
+      "id": "notif_1791185064320_d4776b",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹1,000 participation is active. Eligible reward: ₹58.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:24:24.320Z"
+    },
+    {
+      "id": "notif_1791184895098_10e494",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Completed!",
+      "message": "₹1,000 participation returned and ₹58 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:21:35.099Z"
+    },
+    {
+      "id": "notif_1791184891942_095e18",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹1,000 participation is active. Eligible reward: ₹58.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:21:31.942Z"
+    },
+    {
+      "id": "notif_1791184814716_f8e948",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Completed",
+      "message": "₹500 has been credited to your bank/UPI account (Ref: UTR_BANK_TEST_999).",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:20:14.716Z"
+    },
+    {
+      "id": "notif_1791184807199_2dcf9c",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Update",
+      "message": "Your withdrawal request is now processing.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:20:07.199Z"
+    },
+    {
+      "id": "notif_1791184772051_0e5415",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Requested",
+      "message": "Withdrawal request for ₹500 (Net ₹500) received and submitted for compliance review.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:19:32.051Z"
+    },
+    {
+      "id": "notif_1791184440642_e4c6e2",
+      "userId": "usr_demo_tester",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹1,000 participation is active. Eligible reward: ₹58.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:14:00.642Z"
+    },
+    {
+      "id": "notif_1791184422827_f34ee5",
+      "userId": "usr_demo_tester",
+      "title": "Recharge Successful",
+      "message": "₹500 has been added to your wallet balance. Available balance: ₹2075.5.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:13:42.827Z"
+    },
+    {
+      "id": "notif_1791184316388_6f1f35",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Completed!",
+      "message": "₹10,000 participation returned and ₹580 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:11:56.388Z"
+    },
+    {
+      "id": "notif_1791184294451_80e7d7",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Completed",
+      "message": "₹500 has been credited to your bank/UPI account (Ref: UPI_TX_98721).",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:11:34.452Z"
+    },
+    {
+      "id": "notif_1791184287948_792ce1",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Requested",
+      "message": "Withdrawal request for ₹500 (Net ₹500) received and submitted for compliance review.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:11:27.948Z"
+    },
+    {
+      "id": "notif_1791184284648_acef9f",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹10,000 participation is active. Eligible reward: ₹580.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:11:24.648Z"
+    },
+    {
+      "id": "notif_1791184280102_c40116",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Completed!",
+      "message": "₹100 participation returned and ₹5.8 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:11:20.103Z"
+    },
+    {
+      "id": "notif_1791184244041_17619e",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Completed",
+      "message": "₹11315 has been credited to your bank/UPI account (Ref: UTR_BANK_291029).",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:10:44.041Z"
+    },
+    {
+      "id": "notif_1791184236094_8d3d0d",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Update",
+      "message": "Your withdrawal request is now processing.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:10:36.094Z"
+    },
+    {
+      "id": "notif_1791184234129_fd6abd",
+      "userId": "usr_admin_root",
+      "title": "Recharge Successful",
+      "message": "₹10000 has been added to your wallet balance. Available balance: ₹55955.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:10:34.129Z"
+    },
+    {
+      "id": "notif_1791184195145_19e27c",
+      "userId": "usr_admin_root",
+      "title": "Support Ticket Logged",
+      "message": "Your ticket (tkt_1791184195144_162181) has been received. Our compliance support team will respond shortly.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:09:55.145Z"
+    },
+    {
+      "id": "notif_1791184131998_cd0e1a",
+      "userId": "usr_admin_root",
+      "title": "Ad Reward Credited",
+      "message": "₹2.5 rewarded for completed advertisement viewing.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:08:51.998Z"
+    },
+    {
+      "id": "notif_1791184106322_28fc73",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹100 participation is active. Eligible reward: ₹5.8.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:08:26.322Z"
+    },
+    {
+      "id": "notif_1791184065620_13b9fa",
+      "userId": "usr_demo_tester",
+      "title": "Support Ticket Update",
+      "message": "Ticket tkt_1791183075835_ab9ca2: Payment verified and reconciled with Razorpay bank gateway.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:07:45.620Z"
+    },
+    {
+      "id": "notif_1791184020895_687ef7",
+      "userId": "usr_admin_root",
+      "title": "Balance Adjusted",
+      "message": "An authorized balance adjustment of ₹-4950 has been applied to your wallet. Reason: dmnhedfnreifdjnkn demnfije jn.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:07:00.895Z"
+    },
+    {
+      "id": "notif_1791183722063_261835",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Completed!",
+      "message": "₹10,000 participation returned and ₹250 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:02:02.063Z"
+    },
+    {
+      "id": "notif_1791183700344_ddd40f",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹10,000 participation is active. Eligible reward: ₹250.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:01:40.344Z"
+    },
+    {
+      "id": "notif_1791183692736_27799f",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Completed!",
+      "message": "₹10,000 participation returned and ₹250 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:01:32.736Z"
+    },
+    {
+      "id": "notif_1791183664843_1c7a50",
+      "userId": "usr_demo_tester",
+      "title": "24-Hour Session Completed!",
+      "message": "₹1,000 participation returned and ₹25 reward credited to your available balance.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:01:04.843Z"
+    },
+    {
+      "id": "notif_1791183648926_542653",
+      "userId": "usr_admin_root",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹10,000 participation is active. Eligible reward: ₹250.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:00:48.926Z"
+    },
+    {
+      "id": "notif_1791183647275_d7cd5f",
+      "userId": "usr_demo_tester",
+      "title": "24-Hour Session Started",
+      "message": "Your session with ₹1,000 participation is active. Eligible reward: ₹25.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T07:00:47.275Z"
+    },
+    {
+      "id": "notif_1791183637665_6557f2",
+      "userId": "usr_demo_tester",
+      "title": "Recharge Successful",
+      "message": "₹2000 has been added to your wallet balance. Available balance: ₹2025.5.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T07:00:37.665Z"
+    },
+    {
+      "id": "notif_1791183558229_7c1e8a",
+      "userId": "usr_admin_root",
+      "title": "Ad Reward Credited",
+      "message": "₹2.5 rewarded for completed advertisement viewing.",
+      "type": "SUCCESS",
+      "read": false,
+      "createdAt": "2026-10-05T06:59:18.229Z"
+    },
+    {
+      "id": "notif_1791183425326_d7f079",
+      "userId": "usr_demo_tester",
+      "title": "Support Ticket Update",
+      "message": "Ticket tkt_1791183075835_ab9ca2: Payment verified and reconciled with Razorpay bank gateway.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T06:57:05.326Z"
+    },
+    {
+      "id": "notif_1791183105723_b782cc",
+      "userId": "usr_demo_tester",
+      "title": "Support Ticket Update",
+      "message": "Ticket tkt_1791183075835_ab9ca2: Payment verified and reconciled with Razorpay bank gateway.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T06:51:45.723Z"
+    },
+    {
+      "id": "notif_1791183075835_971ac1",
+      "userId": "usr_demo_tester",
+      "title": "Support Ticket Logged",
+      "message": "Your ticket (tkt_1791183075835_ab9ca2) has been received. Our compliance support team will respond shortly.",
+      "type": "INFO",
+      "read": false,
+      "createdAt": "2026-10-05T06:51:15.835Z"
+    },
+    {
+      "id": "notif_1791183027627_b27c68",
+      "userId": "usr_demo_tester",
+      "title": "Reward Credited!",
+      "message": "Congratulations! ₹25 has been credited to your available balance.",
+      "type": "SUCCESS",
+      "read": true,
+      "createdAt": "2026-10-05T06:50:27.627Z"
+    },
+    {
+      "id": "notif_1791183016916_2a2b7b",
+      "userId": "usr_demo_tester",
+      "title": "24-Hour Session Started",
+      "message": "Your 24-hour engagement session is now active until 10/6/2026 6:50:16 AM.",
+      "type": "INFO",
+      "read": true,
+      "createdAt": "2026-10-05T06:50:16.916Z"
+    },
+    {
+      "id": "notif_1791183003810_d69afd",
+      "userId": "usr_demo_tester",
+      "title": "Withdrawal Requested",
+      "message": "Withdrawal request for ₹11315 (Net ₹11315) received and submitted for compliance review.",
+      "type": "INFO",
+      "read": true,
+      "createdAt": "2026-10-05T06:50:03.810Z"
+    },
+    {
+      "id": "notif_1791182946291_49e553",
+      "userId": "usr_demo_tester",
+      "title": "Recharge Successful",
+      "message": "₹10000 has been added to your wallet balance. Available balance: ₹11315.5.",
+      "type": "SUCCESS",
+      "read": true,
+      "createdAt": "2026-10-05T06:49:06.291Z"
+    },
+    {
+      "id": "notif_1791182882016_15e087",
+      "userId": "usr_demo_tester",
+      "title": "Reward Credited!",
+      "message": "Congratulations! ₹32 has been credited to your available balance.",
+      "type": "SUCCESS",
+      "read": true,
+      "createdAt": "2026-10-05T06:48:02.016Z"
+    },
+    {
+      "id": "notif_1791182877341_33e1d2",
+      "userId": "usr_demo_tester",
+      "title": "24-Hour Session Started",
+      "message": "Your 24-hour engagement session is now active until 10/6/2026 6:47:57 AM.",
+      "type": "INFO",
+      "read": true,
+      "createdAt": "2026-10-05T06:47:57.341Z"
+    },
+    {
+      "id": "notif_1791182875648_ecda19",
+      "userId": "usr_demo_tester",
+      "title": "Reward Credited!",
+      "message": "Congratulations! ₹31 has been credited to your available balance.",
+      "type": "SUCCESS",
+      "read": true,
+      "createdAt": "2026-10-05T06:47:55.648Z"
+    },
+    {
+      "id": "notif_1791182858598_6966fd",
+      "userId": "usr_demo_tester",
+      "title": "24-Hour Session Started",
+      "message": "Your 24-hour engagement session is now active until 10/6/2026 6:47:38 AM.",
+      "type": "INFO",
+      "read": true,
+      "createdAt": "2026-10-05T06:47:38.598Z"
+    },
+    {
+      "id": "notif_1791182848102_dac178",
+      "userId": "usr_demo_tester",
+      "title": "Ad Reward Credited",
+      "message": "₹2.5 rewarded for completed advertisement viewing.",
+      "type": "SUCCESS",
+      "read": true,
+      "createdAt": "2026-10-05T06:47:28.102Z"
+    }
+  ],
+  "settings": {
+    "appName": "VORA EARNING",
+    "maintenanceMode": false,
+    "minSupportedVersion": "1.0.0",
+    "latestVersion": "1.0.0",
+    "forceUpdateEnabled": false,
+    "updateUrl": "https://play.google.com/store/apps/details?id=com.vora.earning",
+    "minRechargeAmount": 100,
+    "maxRechargeAmount": 10000000000,
+    "minWithdrawalAmount": 200,
+    "maxWithdrawalAmount": 25000000,
+    "withdrawalFeePercentage": 0,
+    "quickRechargeChips": [
+      100,
+      250,
+      500,
+      1000,
+      2000,
+      5000,
+      10000
+    ],
+    "termsAndConditions": "Welcome to VORA EARNING. This application is a compliant rewards and fintech loyalty platform. By accessing or using our services, you agree to comply with all applicable financial regulations, fair-play guidelines, and reward terms. No guaranteed returns or daily profits are promised. Rewards are subject to activity completion, verified transactions, and eligibility verification.",
+    "privacyPolicy": "Your privacy is paramount at VORA EARNING. We collect minimal necessary data (mobile number, transaction identifiers, device security tokens) strictly for authentication, fraud prevention, and ledger reconciliation. Banking information is masked in the UI and encrypted in transit.",
+    "refundPolicy": "Recharge payments verified on Razorpay that are not credited due to technical discrepancies are automatically reconciled or refunded to the original payment source within 5 to 7 banking days as per RBI guidelines.",
+    "withdrawalPolicy": "Withdrawals are processed to verified domestic bank accounts or UPI VPA matching the registered account holder name. Payout processing takes between 1 to 24 business hours following automated compliance verification.",
+    "riskDisclosure": "VORA EARNING does not operate as an unregistered collective investment scheme or guaranteed return deposit. Any activity rewards, promotional bonuses, or engagement incentives are discretionary marketing campaigns governed by fair usage limits.",
+    "supportEmail": "support@voraearning.com",
+    "supportPhone": "+91 8000 123 456",
+    "adMobAppId": "ca-app-pub-3940256099942544~3347511713",
+    "rewardedAdUnitId": "ca-app-pub-3940256099942544/5224354917",
+    "bannerAdUnitId": "ca-app-pub-3940256099942544/6300978111",
+    "interstitialAdUnitId": "ca-app-pub-3940256099942544/1033173712",
+    "rewardPerAd": 8,
+    "dailyMaxAds": 15,
+    "cooldownSeconds": 25
+  },
+  "otpStore": {
+    "9999988888": {
+      "otp": "889900",
+      "expiresAt": 1791198130805,
+      "attempts": 0
+    }
+  },
+  "adTokens": {
+    "66e5460b54dfb0b282fe9c01711cdeee3573c7b9bc82a3f7": {
+      "token": "66e5460b54dfb0b282fe9c01711cdeee3573c7b9bc82a3f7",
+      "userId": "usr_demo_tester",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "issuedAt": 1791183315840,
+      "expiresAt": 1791183435840
+    },
+    "2a65525835c2b780e82e69e9b419ddcb1a29a24c4a25eeb2": {
+      "token": "2a65525835c2b780e82e69e9b419ddcb1a29a24c4a25eeb2",
+      "userId": "usr_admin_root",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "issuedAt": 1791184244417,
+      "expiresAt": 1791184364417
+    },
+    "66e54f1b114ce8096eb273bd645922cece62d5af77afc68a": {
+      "token": "66e54f1b114ce8096eb273bd645922cece62d5af77afc68a",
+      "userId": "usr_demo_tester",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "issuedAt": 1791184343451,
+      "expiresAt": 1791184463451
+    },
+    "ec8d6946b357d8a97b02cfc5029c27904bb34fbbb36d0e67": {
+      "token": "ec8d6946b357d8a97b02cfc5029c27904bb34fbbb36d0e67",
+      "userId": "usr_demo_tester",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "issuedAt": 1791184431706,
+      "expiresAt": 1791184551706
+    },
+    "e5f9b98c488b5d6ab14f038feb0d7e21c5f34a42835fc9ec": {
+      "token": "e5f9b98c488b5d6ab14f038feb0d7e21c5f34a42835fc9ec",
+      "userId": "usr_demo_tester",
+      "adUnitId": "ca-app-pub-3940256099942544/5224354917",
+      "issuedAt": 1791184944933,
+      "expiresAt": 1791185064933
+    }
+  },
+  "supportTickets": [
+    {
+      "id": "tkt_1791184195144_162181",
+      "userId": "usr_admin_root",
+      "userName": "System Administrator",
+      "userMobile": "9876543210",
+      "subject": "uhuh",
+      "message": "uhh",
+      "status": "OPEN",
+      "createdAt": "2026-10-05T07:09:55.144Z",
+      "updatedAt": "2026-10-05T07:09:55.144Z"
+    },
+    {
+      "id": "tkt_1791183075835_ab9ca2",
+      "userId": "usr_demo_tester",
+      "userName": "Prince Sharma",
+      "userMobile": "9999988888",
+      "subject": "Recharge status inquiry",
+      "message": "My test UPI transaction confirmed on Razorpay.",
+      "status": "RESOLVED",
+      "createdAt": "2026-10-05T06:51:15.835Z",
+      "updatedAt": "2026-10-05T07:07:45.620Z",
+      "adminReply": "Payment verified and reconciled with Razorpay bank gateway."
+    }
+  ]
+}
