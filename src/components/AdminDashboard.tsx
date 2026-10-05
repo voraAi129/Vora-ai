@@ -387,7 +387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         break;
       }
       case 't3': {
-        const res = await fetch('/api/auth/login', {
+        const res = await fetch(`${LIVE_BACKEND_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mobile: '9999988888', password: 'VoraUser123!' })
@@ -398,7 +398,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       }
       case 't4': {
         try {
-          const res = await fetch('/api/admin/dashboard', {
+          const res = await fetch(`${LIVE_BACKEND_URL}/api/admin/dashboard`, {
             headers: { Authorization: 'Bearer mock_invalid_user_token' }
           });
           if (res.status !== 401 && res.status !== 403) {
