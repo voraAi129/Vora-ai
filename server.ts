@@ -341,9 +341,18 @@ function loadDb() {
   try {
     if (fs.existsSync(DB_FILE)) {
       const data = fs.readFileSync(DB_FILE, 'utf-8');
-      db = JSON.parse(data);
+      const parsed = JSON.parse(data);
+      db = {
+        ...db,
+        ...parsed,
+        settings: {
+          ...defaultSettings,
+          ...(parsed.settings || {})
+        }
+      };
       if (!db.supportTickets) db.supportTickets = [];
       if (!db.upiDeposits) db.upiDeposits = [];
+      if (!db.withdrawals) db.withdrawals = [];
       if (!db.settings.upiId) db.settings.upiId = '9266428368-i638-2@ibl';
       if (!db.settings.upiPayeeName) db.settings.upiPayeeName = 'Vora Earning';
     }

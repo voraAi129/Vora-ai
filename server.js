@@ -90,9 +90,18 @@ function loadDb() {
   try {
     if (fs.existsSync(DB_FILE)) {
       const data = fs.readFileSync(DB_FILE, "utf-8");
-      db = JSON.parse(data);
+      const parsed = JSON.parse(data);
+      db = {
+        ...db,
+        ...parsed,
+        settings: {
+          ...defaultSettings,
+          ...parsed.settings || {}
+        }
+      };
       if (!db.supportTickets) db.supportTickets = [];
       if (!db.upiDeposits) db.upiDeposits = [];
+      if (!db.withdrawals) db.withdrawals = [];
       if (!db.settings.upiId) db.settings.upiId = "9266428368-i638-2@ibl";
       if (!db.settings.upiPayeeName) db.settings.upiPayeeName = "Vora Earning";
     }
@@ -749,6 +758,85 @@ app.get("/api/transactions", requireAuth, (req, res) => {
     transactions: filtered
   });
 });
+app.get("/api/system/settings", (req, res) => {
+  res.json({ settings: db.settings });
+});
+app.post("/api/withdrawal/create", requireAuth, (req, res) => {
+  const { amount, accountHolderName, bankAccountNumber, ifsc, upiId } = req.body;
+  const numAmount = Number(amount);
+  if (isNaN(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ error: "Valid withdrawal amount is required" });
+  }
+  const { minWithdrawalAmount, maxWithdrawalAmount, withdrawalFeePercentage } = db.settings;
+  const min = minWithdrawalAmount || 200;
+  const max = maxWithdrawalAmount || 25e3;
+  if (numAmount < min || numAmount > max) {
+    return res.status(400).json({
+      error: `Withdrawal amount must be between \u20B9${min.toLocaleString("en-IN")} and \u20B9${max.toLocaleString("en-IN")}`
+    });
+  }
+  const wallet = getWallet(req.user.id);
+  if (wallet.availableBalance < numAmount) {
+    return res.status(400).json({
+      error: `Insufficient available balance. You have \u20B9${wallet.availableBalance}, requested \u20B9${numAmount}`
+    });
+  }
+  const feePct = withdrawalFeePercentage || 0;
+  const fee = Math.round(numAmount * feePct / 100);
+  const netAmount = numAmount - fee;
+  const withdrawalId = `wdr_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+  const withdrawal = {
+    id: withdrawalId,
+    userId: req.user.id,
+    userName: req.user.name,
+    userMobile: req.user.mobile,
+    amount: numAmount,
+    fee,
+    netAmount,
+    accountHolderName: accountHolderName || req.user.name,
+    bankAccountNumber: bankAccountNumber || "",
+    ifsc: ifsc || "",
+    upiId: upiId || "",
+    status: "REQUESTED",
+    requestedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  wallet.availableBalance -= numAmount;
+  wallet.pendingBalance += numAmount;
+  wallet.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+  if (!db.withdrawals) db.withdrawals = [];
+  db.withdrawals.unshift(withdrawal);
+  const tx = {
+    id: `tx_wdr_${Date.now()}`,
+    userId: req.user.id,
+    amount: -numAmount,
+    type: "WITHDRAWAL",
+    status: "PENDING",
+    description: `Withdrawal Request to ${upiId || bankAccountNumber || "Bank Account"}`,
+    referenceId: withdrawal.id,
+    balanceAfter: wallet.availableBalance,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  db.transactions.unshift(tx);
+  saveDb();
+  sendNotification(
+    req.user.id,
+    "Withdrawal Requested \u{1F4B8}",
+    `Your withdrawal request of \u20B9${numAmount} has been registered and is under processing.`,
+    "INFO"
+  );
+  res.json({
+    success: true,
+    withdrawal,
+    walletBalance: wallet.availableBalance
+  });
+});
+app.get("/api/withdrawal/history", requireAuth, (req, res) => {
+  if (!db.withdrawals) db.withdrawals = [];
+  const userWithdrawals = db.withdrawals.filter((w) => w.userId === req.user.id);
+  res.json({ withdrawals: userWithdrawals });
+});
 app.post("/api/recharge/upi-submit", requireAuth, (req, res) => {
   const { amount, utr, screenshotUrl } = req.body;
   const numAmount = Number(amount);
@@ -834,7 +922,7 @@ app.post("/api/admin/upi-deposits/:id/approve", requireAdmin, (req, res) => {
   addTransaction(
     deposit.userId,
     deposit.amount,
-    "DEPOSIT",
+    "RECHARGE",
     "SUCCESS",
     `Manual UPI Recharge Verified (UTR: ${deposit.utr})`,
     deposit.id
@@ -845,12 +933,16 @@ app.post("/api/admin/upi-deposits/:id/approve", requireAdmin, (req, res) => {
     `\u20B9${deposit.amount} has been verified and added to your wallet balance. (UTR: ${deposit.utr})`,
     "SUCCESS"
   );
-  addAuditLog(req.user.id, "APPROVE_UPI_DEPOSIT", {
-    depositId: deposit.id,
-    targetUserId: deposit.userId,
-    amount: deposit.amount,
-    utr: deposit.utr
-  });
+  addAuditLog(
+    req.user.id,
+    req.user.name,
+    "APPROVE_UPI_DEPOSIT",
+    `deposit:${deposit.id}`,
+    "PENDING",
+    "APPROVED",
+    `Recharge of \u20B9${deposit.amount} approved for ${deposit.userName}`,
+    req.ip
+  );
   saveDb();
   res.json({
     success: true,
@@ -881,13 +973,16 @@ app.post("/api/admin/upi-deposits/:id/reject", requireAdmin, (req, res) => {
     `Your recharge request of \u20B9${deposit.amount} (UTR: ${deposit.utr}) was rejected. Reason: ${rejectReason}`,
     "ALERT"
   );
-  addAuditLog(req.user.id, "REJECT_UPI_DEPOSIT", {
-    depositId: deposit.id,
-    targetUserId: deposit.userId,
-    amount: deposit.amount,
-    utr: deposit.utr,
-    reason: rejectReason
-  });
+  addAuditLog(
+    req.user.id,
+    req.user.name,
+    "REJECT_UPI_DEPOSIT",
+    `deposit:${deposit.id}`,
+    "PENDING",
+    "REJECTED",
+    rejectReason,
+    req.ip
+  );
   saveDb();
   res.json({
     success: true,

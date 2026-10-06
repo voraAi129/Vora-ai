@@ -82,15 +82,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [isUpdatingWithdrawal, setIsUpdatingWithdrawal] = useState(false);
   const [withdrawalModalMsg, setWithdrawalModalMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  // Ads & AdMob Config
-  const [adConfig, setAdConfig] = useState<AdRewardConfig>({
-    adMobAppId: 'ca-app-pub-3940256099942544~3347511713',
-    rewardedAdUnitId: 'ca-app-pub-3940256099942544/5224354917',
-    bannerAdUnitId: 'ca-app-pub-3940256099942544/6300978111',
-    interstitialAdUnitId: 'ca-app-pub-3940256099942544/1033173712',
-    rewardPerAd: 2.5,
-    dailyMaxAds: 10,
-    cooldownSeconds: 30
+  // Persistent local cache keys
+  const CACHED_AD_CONFIG = 'vora_admin_ad_config';
+  const CACHED_SETTINGS = 'vora_admin_settings';
+
+  // Ads & AdMob Config with persistent local fallback
+  const [adConfig, setAdConfig] = useState<AdRewardConfig>(() => {
+    try {
+      const cached = localStorage.getItem(CACHED_AD_CONFIG);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return {
+      adMobAppId: 'ca-app-pub-3940256099942544~3347511713',
+      rewardedAdUnitId: 'ca-app-pub-3940256099942544/5224354917',
+      bannerAdUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      interstitialAdUnitId: 'ca-app-pub-3940256099942544/1033173712',
+      rewardPerAd: 2.5,
+      dailyMaxAds: 10,
+      cooldownSeconds: 30
+    };
   });
   const [adReason, setAdReason] = useState('');
   const [isSavingAdConfig, setIsSavingAdConfig] = useState(false);
@@ -105,8 +115,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [campaigns, setCampaigns] = useState<RewardCampaign[]>([]);
   const [editingCampaign, setEditingCampaign] = useState<any | null>(null);
 
-  // Settings
-  const [settings, setSettings] = useState<AppSettings | null>(null);
+  // Settings with persistent local fallback
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    try {
+      const cached = localStorage.getItem(CACHED_SETTINGS);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return {
+      appName: 'VORA EARNING',
+      maintenanceMode: false,
+      minSupportedVersion: '1.0.0',
+      latestVersion: '1.0.0',
+      forceUpdateEnabled: false,
+      updateUrl: 'https://play.google.com/store/apps/details?id=com.vora.earning',
+      minRechargeAmount: 100,
+      maxRechargeAmount: 100000,
+      minWithdrawalAmount: 200,
+      maxWithdrawalAmount: 25000,
+      withdrawalFeePercentage: 0,
+      quickRechargeChips: [100, 250, 500, 1000, 2000, 5000, 10000],
+      termsAndConditions: 'Welcome to VORA EARNING. This application is a compliant rewards and fintech loyalty platform.',
+      privacyPolicy: 'Your privacy is paramount at VORA EARNING.',
+      refundPolicy: 'Recharge payments verified on Razorpay that are not credited are automatically reconciled.',
+      withdrawalPolicy: 'Withdrawals are processed to verified domestic bank accounts or UPI VPA.',
+      riskDisclosure: 'VORA EARNING operates with transparent financial limits.',
+      supportEmail: 'support@voraearning.com',
+      supportPhone: '+91 8000 123 456',
+      upiId: '9266428368-i638-2@ibl',
+      upiPayeeName: 'Vora Earning'
+    };
+  });
 
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -146,32 +184,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      // Load core dashboard first for instant display
-      const dashRes = await api.getAdminDashboard().catch((e) => { throw e; });
-      setStats(dashRes.stats);
-      setAlerts(dashRes.systemAlerts || []);
+      // Load core dashboard
+      try {
+        const dashRes = await api.getAdminDashboard();
+        if (dashRes?.stats) setStats(dashRes.stats);
+        if (dashRes?.systemAlerts) setAlerts(dashRes.systemAlerts);
+      } catch (err: any) {
+        console.warn('Dashboard stats fetch:', err);
+      }
       setLoading(false);
 
-      // Load rest in background (non-blocking)
-      const [wRes, setRes, logRes, tktRes, upiRes] = await Promise.allSettled([
+      // Load all admin modules in background
+      const [wRes, setRes, logRes, tktRes, upiRes, cmpRes, adRes] = await Promise.allSettled([
         api.getAdminWithdrawals(),
         api.getAdminSettings(),
         api.getAdminAuditLogs(),
         api.getAdminTickets(),
-        api.getAdminUpiDeposits()
+        api.getAdminUpiDeposits(),
+        api.getAdminRewardConfig(),
+        api.getAdminAdConfig()
       ]);
 
-      if (wRes.status === 'fulfilled') setWithdrawals(wRes.value.withdrawals || []);
-      if (setRes.status === 'fulfilled') setSettings(setRes.value.settings);
-      if (logRes.status === 'fulfilled') setAuditLogs(logRes.value.auditLogs || []);
-      if (tktRes.status === 'fulfilled') setAdminTickets(tktRes.value.tickets || []);
-      if (upiRes.status === 'fulfilled') setUpiDeposits(upiRes.value.deposits || []);
-
-      // Load ad config
-      api.getAdminAdConfig().then((adRes) => { if (adRes) setAdConfig(adRes); }).catch(() => {});
+      if (wRes.status === 'fulfilled' && wRes.value?.withdrawals) setWithdrawals(wRes.value.withdrawals);
+      if (setRes.status === 'fulfilled' && setRes.value?.settings) {
+        setSettings(setRes.value.settings);
+        try { localStorage.setItem(CACHED_SETTINGS, JSON.stringify(setRes.value.settings)); } catch {}
+      }
+      if (logRes.status === 'fulfilled' && logRes.value?.auditLogs) setAuditLogs(logRes.value.auditLogs);
+      if (tktRes.status === 'fulfilled' && tktRes.value?.tickets) setAdminTickets(tktRes.value.tickets);
+      if (upiRes.status === 'fulfilled' && upiRes.value?.deposits) setUpiDeposits(upiRes.value.deposits);
+      if (cmpRes.status === 'fulfilled' && cmpRes.value?.campaigns) setCampaigns(cmpRes.value.campaigns);
+      if (adRes.status === 'fulfilled' && adRes.value) {
+        setAdConfig(adRes.value);
+        try { localStorage.setItem(CACHED_AD_CONFIG, JSON.stringify(adRes.value)); } catch {}
+      }
     } catch (err: any) {
       setLoading(false);
-      setToastMsg({ text: err.message || 'Access restricted — check admin login', type: 'error' });
+      setToastMsg({ text: err.message || 'Connecting to server...', type: 'error' });
     }
   };
 
@@ -222,9 +271,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     } catch {}
   };
 
+  // Auto-refresh data whenever tab changes
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers();
+    } else if (activeTab === 'deposits') {
+      api.getAdminUpiDeposits().then(r => { if (r?.deposits) setUpiDeposits(r.deposits); }).catch(() => {});
+    } else if (activeTab === 'withdrawals') {
+      api.getAdminWithdrawals().then(r => { if (r?.withdrawals) setWithdrawals(r.withdrawals); }).catch(() => {});
+    } else if (activeTab === 'campaigns') {
+      api.getAdminRewardConfig().then(r => { if (r?.campaigns) setCampaigns(r.campaigns); }).catch(() => {});
+    } else if (activeTab === 'settings') {
+      api.getAdminSettings().then(r => {
+        if (r?.settings) {
+          setSettings(r.settings);
+          try { localStorage.setItem(CACHED_SETTINGS, JSON.stringify(r.settings)); } catch {}
+        }
+      }).catch(() => {});
+    } else if (activeTab === 'ads') {
+      api.getAdminAdConfig().then(r => {
+        if (r) {
+          setAdConfig(r);
+          try { localStorage.setItem(CACHED_AD_CONFIG, JSON.stringify(r)); } catch {}
+        }
+      }).catch(() => {});
+    } else if (activeTab === 'tickets') {
+      api.getAdminTickets().then(r => { if (r?.tickets) setAdminTickets(r.tickets); }).catch(() => {});
+    } else if (activeTab === 'audit') {
+      api.getAdminAuditLogs().then(r => { if (r?.auditLogs) setAuditLogs(r.auditLogs); }).catch(() => {});
     }
   }, [activeTab, userSearch]);
 
@@ -324,9 +398,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     if (!settings) return;
     try {
       sound.playTap();
+      try { localStorage.setItem(CACHED_SETTINGS, JSON.stringify(settings)); } catch {}
       await api.updateAdminSettings(settings);
+      if (settings.upiId) {
+        await api.updateUpiSettings(settings.upiId, settings.upiPayeeName || 'Vora Earning').catch(() => {});
+      }
       sound.playSuccess();
-      setToastMsg({ text: 'System settings updated and logged.', type: 'success' });
+      setToastMsg({ text: 'System settings & UPI parameters saved successfully!', type: 'success' });
       loadDashboardData();
     } catch (err: any) {
       sound.playError();
@@ -364,6 +442,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       setIsSavingAdConfig(true);
       setAdSuccessMsg(null);
       sound.playTap();
+      try { localStorage.setItem(CACHED_AD_CONFIG, JSON.stringify(adConfig)); } catch {}
 
       await api.updateAdminAdConfig({
         ...adConfig,
@@ -1615,13 +1694,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 />
               </div>
             </div>
+            <div>
+              <label className="text-slate-400 block mb-0.5">Withdrawal Fee Percentage (%)</label>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                value={settings.withdrawalFeePercentage || 0}
+                onChange={(e) => setSettings({ ...settings, withdrawalFeePercentage: Number(e.target.value) })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+              />
+            </div>
+          </div>
+
+          {/* UPI Payment Gateway Settings */}
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+            <h4 className="font-bold text-white uppercase text-[10px]">UPI QR & Deposit Configuration</h4>
+            <div>
+              <label className="text-slate-400 block mb-0.5">Admin UPI ID (for QR scan & user deposits)</label>
+              <input
+                type="text"
+                value={settings.upiId || ''}
+                onChange={(e) => setSettings({ ...settings, upiId: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono text-xs"
+                placeholder="e.g. 9266428368-i638-2@ibl"
+              />
+            </div>
+            <div>
+              <label className="text-slate-400 block mb-0.5">Payee Name</label>
+              <input
+                type="text"
+                value={settings.upiPayeeName || ''}
+                onChange={(e) => setSettings({ ...settings, upiPayeeName: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono text-xs"
+                placeholder="e.g. Vora Earning"
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 font-bold text-slate-950 text-xs shadow-md shadow-amber-400/20"
           >
-            Update System Parameters
+            Update System Parameters & UPI Settings
           </button>
         </form>
       )}

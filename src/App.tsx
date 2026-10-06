@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { api } from './services/api';
 import { sound } from './services/audio';
 import { User, AppSettings } from './types';
@@ -133,6 +134,29 @@ export default function App() {
       setIsExitConfirmOpen(true);
     }
   }, [currentView, isExitConfirmOpen, isAdOpen, legalTab, isSupportOpen, isNotifsOpen]);
+
+  // Register Android Hardware Back Button listener
+  useEffect(() => {
+    let backListener: any = null;
+    try {
+      CapacitorApp.addListener('backButton', () => {
+        handleAndroidBack();
+      }).then((listener) => {
+        backListener = listener;
+      }).catch(() => {});
+    } catch {}
+
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      handleAndroidBack();
+    };
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      if (backListener?.remove) backListener.remove();
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [handleAndroidBack]);
 
   // Auth success handler
   const handleAuthSuccess = (user: User, token: string) => {
@@ -311,7 +335,11 @@ export default function App() {
         <ExitConfirmModal
           onConfirm={() => {
             setIsExitConfirmOpen(false);
-            window.location.reload();
+            try {
+              CapacitorApp.exitApp();
+            } catch {
+              window.close();
+            }
           }}
           onCancel={() => setIsExitConfirmOpen(false)}
         />
