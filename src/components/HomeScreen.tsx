@@ -133,13 +133,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-prompt AdMob ad every 5 minutes (only for users with first recharge done)
+  // Auto-prompt AdMob ad every 2 minutes (for users with first recharge done)
   useEffect(() => {
     const adInterval = setInterval(() => {
       if (isFirstRechargeDone) {
         onWatchAd();
       }
-    }, 5 * 60 * 1000); // 5 minutes (300000ms)
+    }, 2 * 60 * 1000); // 2 minutes (120000ms)
     return () => clearInterval(adInterval);
   }, [onWatchAd, isFirstRechargeDone]);
 

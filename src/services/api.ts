@@ -14,7 +14,8 @@ import {
   AppSettings,
   SystemNotification,
   SupportTicket,
-  AuditLog
+  AuditLog,
+  UpiDeposit
 } from '../types';
 
 export const LIVE_BACKEND_URL = 'https://vora-earning-production.up.railway.app';
@@ -511,6 +512,56 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ token, watchDurationMs, completed })
     });
+  }
+
+  // --- Manual UPI Recharge & Deposits ---
+  public async submitUpiDeposit(amount: number, utr: string, screenshotUrl?: string) {
+    return this.request<{
+      success: boolean;
+      depositId: string;
+      amount: number;
+      utr: string;
+      message: string;
+    }>('/api/recharge/upi-submit', {
+      method: 'POST',
+      body: JSON.stringify({ amount, utr, screenshotUrl })
+    });
+  }
+
+  public async getMyUpiDeposits() {
+    return this.request<{ deposits: UpiDeposit[] }>('/api/recharge/my-deposits');
+  }
+
+  public async getAdminUpiDeposits(status?: string) {
+    const query = status && status !== 'ALL' ? `?status=${status}` : '';
+    return this.request<{ deposits: UpiDeposit[] }>(`/api/admin/upi-deposits${query}`);
+  }
+
+  public async approveAdminUpiDeposit(id: string) {
+    return this.request<{ success: boolean; message: string; deposit: UpiDeposit }>(
+      `/api/admin/upi-deposits/${id}/approve`,
+      { method: 'POST' }
+    );
+  }
+
+  public async rejectAdminUpiDeposit(id: string, reason?: string) {
+    return this.request<{ success: boolean; message: string; deposit: UpiDeposit }>(
+      `/api/admin/upi-deposits/${id}/reject`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ reason })
+      }
+    );
+  }
+
+  public async updateUpiSettings(upiId: string, upiPayeeName: string) {
+    return this.request<{ success: boolean; upiId: string; upiPayeeName: string }>(
+      '/api/admin/settings/upi',
+      {
+        method: 'POST',
+        body: JSON.stringify({ upiId, upiPayeeName })
+      }
+    );
   }
 
   // --- System ---

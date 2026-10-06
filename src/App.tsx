@@ -275,8 +275,10 @@ export default function App() {
       {/* AdMob Rewarded Ad Player Modal */}
       {isAdOpen && (
         <RewardedAdModal
-          onSuccess={() => {
+          onSuccess={(_rewardAmount) => {
             setIsAdOpen(false);
+            // Refresh wallet silently after reward
+            api.getWallet().catch(() => {});
           }}
           onClose={() => setIsAdOpen(false)}
         />

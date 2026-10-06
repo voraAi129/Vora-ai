@@ -202,6 +202,24 @@ interface AppSettingsRecord {
   rewardPerAd: number;
   dailyMaxAds: number;
   cooldownSeconds: number;
+  upiId: string;
+  upiPayeeName: string;
+}
+
+interface UpiDepositRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userMobile: string;
+  amount: number;
+  utr: string;
+  screenshotUrl?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  updatedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
 }
 
 interface NotificationRecord {
@@ -233,6 +251,7 @@ interface DatabaseState {
   wallets: Record<string, WalletRecord>;
   transactions: TransactionRecord[];
   rechargeOrders: RechargeOrder[];
+  upiDeposits: UpiDepositRequest[];
   withdrawals: WithdrawalRequest[];
   campaigns: RewardCampaignRecord[];
   rewardSessions: RewardSessionRecord[];
@@ -241,7 +260,7 @@ interface DatabaseState {
   notifications: NotificationRecord[];
   supportTickets: SupportTicketRecord[];
   settings: AppSettingsRecord;
-  otpStore: Record<string, { otp: string; expiresAt: number; attempts: number }>;
+  otpStore: Record<string, { otp: string; expiresAt: number; attempts: number; verified?: boolean }>;
   adTokens: Record<string, AdRewardToken>;
 }
 
@@ -272,7 +291,9 @@ const defaultSettings: AppSettingsRecord = {
   interstitialAdUnitId: 'ca-app-pub-3940256099942544/1033173712',
   rewardPerAd: 2.5,
   dailyMaxAds: 15,
-  cooldownSeconds: 30
+  cooldownSeconds: 30,
+  upiId: '9266428368-i638-2@ibl',
+  upiPayeeName: 'Vora Earning'
 };
 
 // Password hashing
@@ -294,6 +315,7 @@ let db: DatabaseState = {
   wallets: {},
   transactions: [],
   rechargeOrders: [],
+  upiDeposits: [],
   withdrawals: [],
   campaigns: [],
   rewardSessions: [],
@@ -321,6 +343,9 @@ function loadDb() {
       const data = fs.readFileSync(DB_FILE, 'utf-8');
       db = JSON.parse(data);
       if (!db.supportTickets) db.supportTickets = [];
+      if (!db.upiDeposits) db.upiDeposits = [];
+      if (!db.settings.upiId) db.settings.upiId = '9266428368-i638-2@ibl';
+      if (!db.settings.upiPayeeName) db.settings.upiPayeeName = 'Vora Earning';
     }
   } catch (err) {
     console.error('Error loading DB, creating fresh state:', err);
@@ -1137,10 +1162,207 @@ app.get('/api/transactions', requireAuth, (req: AuthenticatedRequest, res: Respo
 });
 
 // ==========================================
-// RECHARGE & RAZORPAY PAYMENT ENDPOINTS
+// RECHARGE & MANUAL UPI DEPOSIT ENDPOINTS
 // ==========================================
 
-// Create Razorpay Order (Real API Integration)
+// Submit Manual UPI Deposit Request
+app.post('/api/recharge/upi-submit', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const { amount, utr, screenshotUrl } = req.body;
+  const numAmount = Number(amount);
+
+  if (isNaN(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ error: 'Valid recharge amount is required' });
+  }
+
+  const { minRechargeAmount, maxRechargeAmount } = db.settings;
+  if (numAmount < minRechargeAmount || numAmount > maxRechargeAmount) {
+    return res.status(400).json({
+      error: `Recharge amount must be between ₹${minRechargeAmount} and ₹${maxRechargeAmount}`
+    });
+  }
+
+  const cleanUtr = String(utr || '').trim();
+  if (!cleanUtr || cleanUtr.length < 6) {
+    return res.status(400).json({ error: 'Please enter a valid 12-digit UPI UTR / Reference Number' });
+  }
+
+  // Check if this UTR was already submitted and approved or pending
+  if (!db.upiDeposits) db.upiDeposits = [];
+  const existingUtr = db.upiDeposits.find(d => d.utr.toLowerCase() === cleanUtr.toLowerCase() && d.status !== 'REJECTED');
+  if (existingUtr) {
+    return res.status(400).json({ error: 'This UTR / Reference Number has already been submitted.' });
+  }
+
+  const depositId = `upi_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+  const deposit: UpiDepositRequest = {
+    id: depositId,
+    userId: req.user!.id,
+    userName: req.user!.name,
+    userMobile: req.user!.mobile,
+    amount: numAmount,
+    utr: cleanUtr,
+    screenshotUrl: screenshotUrl || '',
+    status: 'PENDING',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  db.upiDeposits.unshift(deposit);
+  saveDb();
+
+  sendNotification(
+    req.user!.id,
+    'Recharge Request Submitted ⏱️',
+    `Your recharge request of ₹${numAmount} (UTR: ${cleanUtr}) has been received and will be verified within 5 minutes to 1 hour.`,
+    'INFO'
+  );
+
+  res.json({
+    success: true,
+    depositId,
+    amount: numAmount,
+    utr: cleanUtr,
+    message: 'Payment proof submitted! Your recharge will be verified within 5 minutes to 1 hour.'
+  });
+});
+
+// Get User's UPI Deposit History
+app.get('/api/recharge/my-deposits', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  if (!db.upiDeposits) db.upiDeposits = [];
+  const userDeposits = db.upiDeposits.filter(d => d.userId === req.user!.id);
+  res.json({ deposits: userDeposits });
+});
+
+// Admin: Get All UPI Deposits
+app.get('/api/admin/upi-deposits', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  if (!db.upiDeposits) db.upiDeposits = [];
+  const { status } = req.query;
+  let list = db.upiDeposits;
+  if (status && typeof status === 'string' && status !== 'ALL') {
+    list = list.filter(d => d.status === status);
+  }
+  res.json({ deposits: list });
+});
+
+// Admin: Approve UPI Deposit
+app.post('/api/admin/upi-deposits/:id/approve', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  if (!db.upiDeposits) db.upiDeposits = [];
+  const { id } = req.params;
+  const deposit = db.upiDeposits.find(d => d.id === id);
+
+  if (!deposit) {
+    return res.status(404).json({ error: 'Deposit request not found' });
+  }
+
+  if (deposit.status === 'APPROVED') {
+    return res.status(400).json({ error: 'Deposit is already approved' });
+  }
+
+  deposit.status = 'APPROVED';
+  deposit.updatedAt = new Date().toISOString();
+  deposit.reviewedAt = new Date().toISOString();
+  deposit.reviewedBy = req.user!.name;
+
+  // Credit amount to user's wallet
+  const wallet = getWallet(deposit.userId);
+  wallet.availableBalance += deposit.amount;
+  wallet.totalDeposited += deposit.amount;
+  wallet.updatedAt = new Date().toISOString();
+
+  // Add ledger transaction
+  addTransaction(
+    deposit.userId,
+    deposit.amount,
+    'DEPOSIT',
+    'SUCCESS',
+    `Manual UPI Recharge Verified (UTR: ${deposit.utr})`,
+    deposit.id
+  );
+
+  // Send notification to user
+  sendNotification(
+    deposit.userId,
+    'Recharge Approved 🎉',
+    `₹${deposit.amount} has been verified and added to your wallet balance. (UTR: ${deposit.utr})`,
+    'SUCCESS'
+  );
+
+  addAuditLog(req.user!.id, 'APPROVE_UPI_DEPOSIT', {
+    depositId: deposit.id,
+    targetUserId: deposit.userId,
+    amount: deposit.amount,
+    utr: deposit.utr
+  });
+
+  saveDb();
+
+  res.json({
+    success: true,
+    message: `₹${deposit.amount} successfully credited to ${deposit.userName}'s wallet!`,
+    deposit
+  });
+});
+
+// Admin: Reject UPI Deposit
+app.post('/api/admin/upi-deposits/:id/reject', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  if (!db.upiDeposits) db.upiDeposits = [];
+  const { id } = req.params;
+  const { reason } = req.body;
+  const deposit = db.upiDeposits.find(d => d.id === id);
+
+  if (!deposit) {
+    return res.status(404).json({ error: 'Deposit request not found' });
+  }
+
+  if (deposit.status === 'APPROVED') {
+    return res.status(400).json({ error: 'Cannot reject an already approved deposit' });
+  }
+
+  const rejectReason = reason || 'UTR or payment screenshot verification failed';
+  deposit.status = 'REJECTED';
+  deposit.rejectionReason = rejectReason;
+  deposit.updatedAt = new Date().toISOString();
+  deposit.reviewedAt = new Date().toISOString();
+  deposit.reviewedBy = req.user!.name;
+
+  sendNotification(
+    deposit.userId,
+    'Recharge Rejected ❌',
+    `Your recharge request of ₹${deposit.amount} (UTR: ${deposit.utr}) was rejected. Reason: ${rejectReason}`,
+    'ALERT'
+  );
+
+  addAuditLog(req.user!.id, 'REJECT_UPI_DEPOSIT', {
+    depositId: deposit.id,
+    targetUserId: deposit.userId,
+    amount: deposit.amount,
+    utr: deposit.utr,
+    reason: rejectReason
+  });
+
+  saveDb();
+
+  res.json({
+    success: true,
+    message: 'Deposit request rejected.',
+    deposit
+  });
+});
+
+// Admin: Update UPI Config
+app.post('/api/admin/settings/upi', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  const { upiId, upiPayeeName } = req.body;
+  if (upiId) db.settings.upiId = String(upiId).trim();
+  if (upiPayeeName) db.settings.upiPayeeName = String(upiPayeeName).trim();
+  saveDb();
+  res.json({
+    success: true,
+    upiId: db.settings.upiId,
+    upiPayeeName: db.settings.upiPayeeName
+  });
+});
+
+// Create Razorpay Order (Kept as fallback)
 app.post('/api/payment/create-order', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { amount } = req.body;
   const numAmount = Number(amount);
@@ -1959,7 +2181,9 @@ app.get('/api/system/settings', (req: Request, res: Response) => {
       withdrawalPolicy: db.settings.withdrawalPolicy,
       riskDisclosure: db.settings.riskDisclosure,
       supportEmail: db.settings.supportEmail,
-      supportPhone: db.settings.supportPhone
+      supportPhone: db.settings.supportPhone,
+      upiId: db.settings.upiId || '9266428368-i638-2@ibl',
+      upiPayeeName: db.settings.upiPayeeName || 'Vora Earning'
     }
   });
 });
@@ -1979,6 +2203,12 @@ app.get('/api/admin/dashboard', requireAdmin, (req: AuthenticatedRequest, res: R
   const totalRechargeVolume = successfulPayments.reduce((sum, o) => sum + (o.amount || 0), 0);
   const pendingPayments = db.rechargeOrders.filter(o => o.status === 'PENDING').length;
   const failedPayments = db.rechargeOrders.filter(o => o.status === 'FAILED').length;
+
+  const pendingUpiDepositsList = (db.upiDeposits || []).filter(d => d.status === 'PENDING');
+  const pendingUpiDeposits = pendingUpiDepositsList.length;
+  const totalUpiDeposits = (db.upiDeposits || []).length;
+  const approvedUpiDeposits = (db.upiDeposits || []).filter(d => d.status === 'APPROVED');
+  const totalUpiDepositVolume = approvedUpiDeposits.reduce((sum, d) => sum + (d.amount || 0), 0);
 
   const totalWithdrawals = db.withdrawals.length;
   const pendingWithdrawalsList = db.withdrawals.filter(w => w.status === 'REQUESTED' || w.status === 'UNDER_REVIEW' || w.status === 'PROCESSING');
@@ -2003,10 +2233,13 @@ app.get('/api/admin/dashboard', requireAdmin, (req: AuthenticatedRequest, res: R
       totalUsers,
       activeUsers,
       newUsersToday,
-      totalRechargeVolume: totalRechargeVolume || 0,
-      successfulPayments: successfulPayments.length,
-      pendingPayments,
+      totalRechargeVolume: (totalRechargeVolume + totalUpiDepositVolume) || 0,
+      successfulPayments: successfulPayments.length + approvedUpiDeposits.length,
+      pendingPayments: pendingPayments + pendingUpiDeposits,
       failedPayments,
+      totalUpiDeposits,
+      pendingUpiDeposits,
+      totalUpiDepositVolume,
       totalWithdrawals,
       pendingWithdrawals,
       pendingWithdrawalCount: pendingWithdrawals,
@@ -2020,6 +2253,9 @@ app.get('/api/admin/dashboard', requireAdmin, (req: AuthenticatedRequest, res: R
       activeSessions
     },
     systemAlerts: [
+      pendingUpiDeposits > 0
+        ? { severity: 'HIGH', level: 'WARNING', message: `${pendingUpiDeposits} UPI Recharge requests awaiting manual verification.` }
+        : null,
       pendingWithdrawals > 0
         ? { severity: 'HIGH', level: 'WARNING', message: `${pendingWithdrawals} withdrawal requests awaiting audit review.` }
         : null,

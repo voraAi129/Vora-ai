@@ -40,7 +40,8 @@ import {
   AppSettings,
   SupportTicket,
   AuditLog,
-  AdRewardConfig
+  AdRewardConfig,
+  UpiDeposit
 } from '../types';
 
 interface AdminDashboardProps {
@@ -49,12 +50,20 @@ interface AdminDashboardProps {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'users' | 'withdrawals' | 'ads' | 'campaigns' | 'tickets' | 'settings' | 'audit' | 'testing'
+    'overview' | 'deposits' | 'users' | 'withdrawals' | 'ads' | 'campaigns' | 'tickets' | 'settings' | 'audit' | 'testing'
   >('overview');
 
   // Stats & Alerts
   const [stats, setStats] = useState<any>(null);
   const [alerts, setAlerts] = useState<any[]>([]);
+
+  // UPI Recharges & Manual Deposits
+  const [upiDeposits, setUpiDeposits] = useState<UpiDeposit[]>([]);
+  const [upiFilter, setUpiFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+  const [selectedScreenshotUrl, setSelectedScreenshotUrl] = useState<string | null>(null);
+  const [rejectingDeposit, setRejectingDeposit] = useState<UpiDeposit | null>(null);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState<string>('');
+  const [isProcessingDeposit, setIsProcessingDeposit] = useState<boolean>(false);
 
   // Users
   const [usersList, setUsersList] = useState<any[]>([]);
@@ -144,10 +153,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         api.getAdminSettings(),
         api.getAdminAuditLogs(),
         api.getAdminTickets(),
-        api.getAdminAdConfig()
+        api.getAdminAdConfig(),
+        api.getAdminUpiDeposits()
       ]);
 
-      const [dashRes, wRes, campRes, setRes, logRes, tktRes, adRes] = results;
+      const [dashRes, wRes, campRes, setRes, logRes, tktRes, adRes, upiRes] = results;
 
       if (dashRes.status === 'fulfilled') {
         setStats(dashRes.value.stats);
@@ -171,6 +181,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       if (adRes.status === 'fulfilled' && adRes.value) {
         setAdConfig(adRes.value);
       }
+      if (upiRes && upiRes.status === 'fulfilled') {
+        setUpiDeposits(upiRes.value.deposits || []);
+      }
 
       if (dashRes.status === 'rejected') {
         throw dashRes.reason;
@@ -179,6 +192,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       setToastMsg({ text: err.message || 'Access restricted', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle Manual UPI Deposit Verification & Approval
+  const handleApproveUpiDeposit = async (dep: UpiDeposit) => {
+    try {
+      setIsProcessingDeposit(true);
+      sound.playTap();
+      const res = await api.approveAdminUpiDeposit(dep.id);
+      sound.playSuccess();
+      setToastMsg({
+        text: res.message || `₹${dep.amount} credited to ${dep.userName}'s wallet!`,
+        type: 'success'
+      });
+      loadDashboardData();
+    } catch (err: any) {
+      sound.playError();
+      setToastMsg({ text: err.message || 'Failed to approve deposit', type: 'error' });
+    } finally {
+      setIsProcessingDeposit(false);
+    }
+  };
+
+  // Handle Manual UPI Deposit Rejection
+  const handleConfirmRejectUpiDeposit = async () => {
+    if (!rejectingDeposit) return;
+    try {
+      setIsProcessingDeposit(true);
+      sound.playTap();
+      await api.rejectAdminUpiDeposit(rejectingDeposit.id, rejectionReasonInput.trim() || 'Payment not received / UTR verification failed');
+      sound.playSuccess();
+      setToastMsg({ text: 'Deposit request rejected.', type: 'success' });
+      setRejectingDeposit(null);
+      setRejectionReasonInput('');
+      loadDashboardData();
+    } catch (err: any) {
+      sound.playError();
+      setToastMsg({ text: err.message || 'Failed to reject deposit', type: 'error' });
+    } finally {
+      setIsProcessingDeposit(false);
     }
   };
 

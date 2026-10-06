@@ -202,4 +202,24 @@ export interface AppSettings {
   riskDisclosure: string;
   supportEmail: string;
   supportPhone: string;
+  upiId?: string;
+  upiPayeeName?: string;
+}
+
+export type UpiDepositStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface UpiDeposit {
+  id: string;
+  userId: string;
+  userName: string;
+  userMobile: string;
+  amount: number;
+  utr: string;
+  screenshotUrl?: string;
+  status: UpiDepositStatus;
+  createdAt: string;
+  updatedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
 }

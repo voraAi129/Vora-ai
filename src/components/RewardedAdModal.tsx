@@ -1,23 +1,109 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
-  Tv,
   AlertCircle,
   CheckCircle2,
   RefreshCw,
-  Sparkles,
   Shield,
   Volume2,
   VolumeX,
-  Play
+  ExternalLink
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
 import { sound } from '../services/audio';
+import { admobService } from '../services/admob';
 
 interface RewardedAdModalProps {
   onSuccess: (rewardAmount: number) => void;
   onClose: () => void;
+}
+
+// Realistic rotating ad campaigns – mimics actual Google AdMob ads
+const AD_CAMPAIGNS = [
+  {
+    brand: 'PhonePe',
+    tagline: 'India\'s #1 Payment App',
+    headline: 'Send Money Instantly — Zero Fees!',
+    desc: 'Transfer to any UPI ID or bank account in seconds. 500M+ users trust PhonePe.',
+    cta: 'Install Free',
+    bg: 'from-[#5f259f] via-[#7b2fb5] to-[#4a1a7a]',
+    accent: '#a855f7',
+    logo: '₽',
+    logoColor: '#fff',
+    logoBg: '#5f259f',
+    badge: 'AD • Google',
+  },
+  {
+    brand: 'Google Pay',
+    tagline: 'Powered by Google',
+    headline: 'Pay Smarter with GPay Rewards',
+    desc: 'Earn cashback every time you pay. Shop, bill, recharge — all in one safe app.',
+    cta: 'Get GPay',
+    bg: 'from-[#1a73e8] via-[#185abc] to-[#0d47a1]',
+    accent: '#4fc3f7',
+    logo: 'G',
+    logoColor: '#fff',
+    logoBg: '#1a73e8',
+    badge: 'AD • Google',
+  },
+  {
+    brand: 'Groww',
+    tagline: 'Invest with Confidence',
+    headline: 'Start SIP from ₹10 — Grow Wealth!',
+    desc: 'Mutual funds, stocks, FD — all in one app. SEBI registered. Join 5 Cr+ investors.',
+    cta: 'Invest Now',
+    bg: 'from-[#00d09c] via-[#00b386] to-[#007a5c]',
+    accent: '#00d09c',
+    logo: 'G',
+    logoColor: '#fff',
+    logoBg: '#00b386',
+    badge: 'AD • Google',
+  },
+  {
+    brand: 'CRED',
+    tagline: 'Members-Only Rewards',
+    headline: 'Pay Credit Card & Earn Coins',
+    desc: 'Get exclusive rewards, cashback & offers just for paying your credit card bills on time.',
+    cta: 'Join CRED',
+    bg: 'from-[#1c1c28] via-[#2d2d40] to-[#111118]',
+    accent: '#facc15',
+    logo: 'C',
+    logoColor: '#facc15',
+    logoBg: '#2d2d40',
+    badge: 'AD • Google',
+  },
+  {
+    brand: 'Dream11',
+    tagline: 'India\'s Biggest Fantasy Platform',
+    headline: 'Win ₹1 Crore — Play Fantasy Sports!',
+    desc: 'Cricket, Football, Kabaddi & more. Create your team and win real cash every day.',
+    cta: 'Play Now',
+    bg: 'from-[#d4001a] via-[#b30016] to-[#800010]',
+    accent: '#ff4d61',
+    logo: 'D',
+    logoColor: '#fff',
+    logoBg: '#d4001a',
+    badge: 'AD • Google',
+  },
+  {
+    brand: 'Meesho',
+    tagline: 'Shop at Lowest Prices',
+    headline: 'Free Delivery on Your 1st Order!',
+    desc: 'Clothes, electronics, home & more — upto 80% off. 1.2 Cr+ sellers. Fast delivery.',
+    cta: 'Shop Now',
+    bg: 'from-[#9c27b0] via-[#7b1fa2] to-[#4a148c]',
+    accent: '#e040fb',
+    logo: 'M',
+    logoColor: '#fff',
+    logoBg: '#9c27b0',
+    badge: 'AD • Google',
+  },
+];
+
+// Pick a random ad on each mount
+function pickAd() {
+  return AD_CAMPAIGNS[Math.floor(Math.random() * AD_CAMPAIGNS.length)];
 }
 
 export const RewardedAdModal: React.FC<RewardedAdModalProps> = ({ onSuccess, onClose }) => {
@@ -29,43 +115,73 @@ export const RewardedAdModal: React.FC<RewardedAdModalProps> = ({ onSuccess, onC
   const [isMuted, setIsMuted] = useState(false);
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [watchStartTime, setWatchStartTime] = useState<number>(0);
+  const [ad] = useState(pickAd);
+  // Animated loading dots
+  const [loadDots, setLoadDots] = useState('');
+  const isMountedRef = useRef(true);
 
-  // Request ad token & simulate AdMob SDK loader
   useEffect(() => {
-    let isMounted = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  // Loading dots animation
+  useEffect(() => {
+    if (phase !== 'loading') return;
+    const t = setInterval(() => {
+      setLoadDots(d => d.length >= 3 ? '' : d + '.');
+    }, 420);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  // Request ad token & start
+  useEffect(() => {
     (async () => {
       try {
         setPhase('loading');
-        // Fetch one-time challenge token from backend
         const tokenRes = await api.requestAdToken();
-        if (!isMounted) return;
+        if (!isMountedRef.current) return;
         setAdToken(tokenRes.token);
         setRewardAmount(tokenRes.rewardAmount);
 
-        // Realistic SDK load time
+        // Native AdMob if inside APK
+        if (admobService.isNativePlatform()) {
+          const nativeRes = await admobService.showNativeRewardedAd(tokenRes.adUnitId);
+          if (!isMountedRef.current) return;
+
+          if (nativeRes.nativeShown) {
+            if (nativeRes.rewarded) {
+              const res = await api.reportAdReward(tokenRes.token, 15000, true);
+              sound.playRewardChime();
+              try { confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 } }); } catch {}
+              setPhase('completed');
+              setTimeout(() => { onSuccess(res.rewardAmount); }, 1200);
+            } else {
+              setPhase('error');
+              setErrorMessage('Ad was closed before the reward completed.');
+            }
+            return;
+          }
+        }
+
+        // Web/fallback: show ad UI after simulated load
         setTimeout(() => {
-          if (!isMounted) return;
+          if (!isMountedRef.current) return;
           setPhase('playing');
           setWatchStartTime(Date.now());
         }, 1800);
       } catch (err: any) {
-        if (!isMounted) return;
+        if (!isMountedRef.current) return;
         setPhase('error');
         setErrorMessage(err.message || 'Advertisement unavailable. Please try again later.');
       }
     })();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
-  // Ad playback timer countdown
+  // Countdown timer
   useEffect(() => {
     if (phase !== 'playing') return;
-
     const timer = setInterval(() => {
-      setCountdown((prev) => {
+      setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
           handleAdCompleted();
@@ -74,24 +190,18 @@ export const RewardedAdModal: React.FC<RewardedAdModalProps> = ({ onSuccess, onC
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [phase]);
 
-  // Complete ad and send backend cryptographic verification
   const handleAdCompleted = async () => {
     if (!adToken) return;
     try {
       const durationMs = Date.now() - watchStartTime;
       const res = await api.reportAdReward(adToken, durationMs, true);
       sound.playRewardChime();
-      try {
-        confetti({ particleCount: 60, spread: 60, origin: { y: 0.5 } });
-      } catch {}
+      try { confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 } }); } catch {}
       setPhase('completed');
-      setTimeout(() => {
-        onSuccess(res.rewardAmount);
-      }, 1500);
+      setTimeout(() => { onSuccess(res.rewardAmount); }, 1600);
     } catch (err: any) {
       setPhase('error');
       setErrorMessage(err.message || 'Reward verification failed');
@@ -107,128 +217,160 @@ export const RewardedAdModal: React.FC<RewardedAdModalProps> = ({ onSuccess, onC
     }
   };
 
+  const progressPct = Math.round(((15 - countdown) / 15) * 100);
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 select-none">
-      <div className="w-full max-w-sm rounded-3xl bg-[#080d18] border border-slate-700/80 overflow-hidden shadow-2xl relative animate-scaleUp text-white flex flex-col">
-        {/* PHASE 1: AD MOB LOADING POPUP */}
+    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-3 select-none">
+      <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl relative flex flex-col">
+
+        {/* ── PHASE: LOADING ── */}
         {phase === 'loading' && (
-          <div className="p-8 text-center flex flex-col items-center justify-center space-y-4">
+          <div className="bg-[#0a0e1a] border border-slate-800 rounded-2xl p-7 text-center flex flex-col items-center space-y-4">
+            {/* Google AdMob logo area */}
+            <div className="flex items-center space-x-1.5">
+              <div className="w-5 h-5 rounded-full bg-[#4285F4]" />
+              <div className="w-5 h-5 rounded-full bg-[#EA4335]" />
+              <div className="w-5 h-5 rounded-full bg-[#FBBC05]" />
+              <div className="w-5 h-5 rounded-full bg-[#34A853]" />
+            </div>
+            <div className="text-[11px] font-bold text-slate-400 tracking-widest uppercase">Google AdMob</div>
+
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center animate-pulse">
-                <Tv className="w-8 h-8 text-amber-400" />
+              <div className="w-14 h-14 rounded-xl border-2 border-slate-700 bg-slate-800/80 flex items-center justify-center">
+                <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
               </div>
-              <RefreshCw className="w-5 h-5 text-amber-400 absolute -bottom-1 -right-1 animate-spin" />
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-white">Please wait…</h3>
-              <p className="text-xs text-slate-400 mt-1">Loading advertisement…</p>
+              <p className="text-sm font-semibold text-white">Loading Ad{loadDots}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Fetching personalized advertisement</p>
             </div>
 
-            <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 pt-2 font-mono">
-              <Shield className="w-3.5 h-3.5 text-amber-400" />
-              <span>Google AdMob Rewarded Video SDK</span>
+            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: '60%' }} />
             </div>
 
             <button
-              onClick={() => {
-                sound.playTap();
-                onClose();
-              }}
-              className="text-xs text-slate-500 hover:text-slate-300 pt-2"
+              onClick={() => { sound.playTap(); onClose(); }}
+              className="text-xs text-slate-600 hover:text-slate-400 pt-1"
             >
               Cancel
             </button>
           </div>
         )}
 
-        {/* PHASE 2: REAL AD PLAYBACK */}
+        {/* ── PHASE: PLAYING (Realistic Ad UI) ── */}
         {phase === 'playing' && (
-          <div className="relative w-full h-[450px] bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 flex flex-col justify-between p-4">
-            {/* Top Bar inside Ad */}
-            <div className="flex items-center justify-between z-20">
-              <div className="flex items-center space-x-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-xs">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="font-mono font-bold text-amber-400">
-                  Reward in {countdown}s
+          <div className={`relative w-full bg-gradient-to-b ${ad.bg} flex flex-col`} style={{ minHeight: 480 }}>
+
+            {/* Top bar — mimics real interstitial ad top bar */}
+            <div className="flex items-center justify-between px-3 pt-3 pb-2">
+              {/* Skip / Countdown */}
+              <div
+                className="flex items-center space-x-1.5 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                <span className="text-[11px] font-bold text-white font-mono">
+                  {countdown > 0 ? `Skip in ${countdown}s` : 'Reward Ready!'}
                 </span>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1.5">
+                {/* Mute */}
                 <button
                   onClick={() => setIsMuted(!isMuted)}
-                  className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white"
+                  className="w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/10"
                 >
-                  {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  {isMuted
+                    ? <VolumeX className="w-3.5 h-3.5 text-white/70" />
+                    : <Volume2 className="w-3.5 h-3.5 text-white/70" />}
                 </button>
+                {/* Close */}
                 <button
                   onClick={handleAttemptClose}
-                  className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white"
+                  className="w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/10"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3.5 h-3.5 text-white/70" />
                 </button>
               </div>
             </div>
 
-            {/* Ad Content Visual */}
-            <div className="my-auto text-center px-4">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-amber-400 p-[2px] mx-auto mb-4 shadow-xl shadow-cyan-500/20">
-                <div className="w-full h-full bg-slate-950 rounded-[22px] flex items-center justify-center">
-                  <Play className="w-8 h-8 text-cyan-400 fill-cyan-400/20" />
-                </div>
+            {/* ──── AD CREATIVE ──── */}
+            <div className="flex-1 flex flex-col items-center justify-center px-5 py-3 text-center">
+              {/* Brand logo circle */}
+              <div
+                className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 shadow-2xl border border-white/10"
+                style={{ background: ad.logoBg }}
+              >
+                <span className="text-4xl font-black" style={{ color: ad.logoColor }}>{ad.logo}</span>
               </div>
-              <span className="text-[10px] font-mono tracking-widest uppercase text-cyan-400 font-bold block mb-1">
-                SPONSORED PARTNER
-              </span>
-              <h4 className="text-lg font-extrabold text-white">
-                Next-Generation Fintech Ecosystem
-              </h4>
-              <p className="text-xs text-slate-300 mt-2 max-w-[240px] mx-auto leading-relaxed">
-                Watch the full sponsor demonstration to qualify for the platform loyalty token.
+
+              {/* Brand name & tagline */}
+              <div
+                className="text-[10px] font-bold tracking-widest uppercase mb-1"
+                style={{ color: ad.accent }}
+              >
+                {ad.tagline}
+              </div>
+              <h3 className="text-xl font-extrabold text-white leading-tight mb-2">
+                {ad.headline}
+              </h3>
+              <p className="text-[12px] text-white/70 leading-relaxed max-w-[260px]">
+                {ad.desc}
               </p>
+
+              {/* CTA Button (decorative — matches real ad UX) */}
+              <button
+                className="mt-5 px-7 py-2.5 rounded-xl text-sm font-bold text-white border border-white/20 shadow-lg transition-all active:scale-95"
+                style={{ background: ad.accent, color: '#0a0a0a' }}
+              >
+                {ad.cta} <ExternalLink className="inline w-3 h-3 ml-1 opacity-70" />
+              </button>
             </div>
 
-            {/* Bottom Progress Bar */}
-            <div className="z-20">
-              <div className="flex justify-between items-center text-[10px] text-slate-400 mb-1.5 font-mono">
-                <span>AdMob Verification Guard</span>
-                <span className="text-emerald-400 font-bold">Reward: ₹{rewardAmount}</span>
+            {/* ──── BOTTOM PROGRESS BAR (Google-style) ──── */}
+            <div className="px-4 pb-4">
+              <div className="flex justify-between items-center text-[10px] text-white/40 mb-1.5 font-mono">
+                <span className="flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  {ad.badge}
+                </span>
+                <span className="font-bold" style={{ color: ad.accent }}>
+                  Earn ₹{rewardAmount} for watching
+                </span>
               </div>
-              <div className="w-full h-1.5 bg-black/60 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 transition-all duration-1000"
-                  style={{ width: `${Math.round(((15 - countdown) / 15) * 100)}%` }}
+                  className="h-full rounded-full transition-all duration-1000"
+                  style={{
+                    width: `${progressPct}%`,
+                    background: `linear-gradient(90deg, ${ad.accent}, #22c55e)`
+                  }}
                 />
               </div>
             </div>
 
-            {/* Early Close Warning Modal */}
+            {/* ──── EARLY CLOSE WARNING ──── */}
             {showExitWarning && (
-              <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
-                <AlertCircle className="w-10 h-10 text-amber-400 mb-2" />
-                <h4 className="text-sm font-bold text-white">Close Early?</h4>
-                <p className="text-xs text-slate-300 mt-1 mb-4">
-                  If you close before the timer ends, you will NOT receive the ₹{rewardAmount} reward.
+              <div className="absolute inset-0 bg-black/95 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center rounded-2xl">
+                <AlertCircle className="w-10 h-10 text-amber-400 mb-3" />
+                <h4 className="text-sm font-bold text-white">Skip this ad?</h4>
+                <p className="text-xs text-slate-300 mt-1 mb-5 max-w-[220px]">
+                  Close before the timer ends and you will <span className="text-red-400 font-bold">NOT</span> receive your ₹{rewardAmount} reward.
                 </p>
                 <div className="w-full flex space-x-2">
                   <button
-                    onClick={() => {
-                      sound.playTap();
-                      setShowExitWarning(false);
-                      onClose();
-                    }}
-                    className="flex-1 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-rose-400"
+                    onClick={() => { sound.playTap(); setShowExitWarning(false); onClose(); }}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-800/80 text-xs font-semibold text-rose-400 border border-rose-400/20"
                   >
-                    Close Without Reward
+                    Skip (No Reward)
                   </button>
                   <button
-                    onClick={() => {
-                      sound.playTap();
-                      setShowExitWarning(false);
-                    }}
-                    className="flex-1 py-2 rounded-xl bg-emerald-500 text-xs font-bold text-slate-950"
+                    onClick={() => { sound.playTap(); setShowExitWarning(false); }}
+                    className="flex-1 py-2.5 rounded-xl text-xs font-bold text-black"
+                    style={{ background: ad.accent }}
                   >
-                    Resume Ad
+                    ▶ Resume Ad
                   </button>
                 </div>
               </div>
@@ -236,38 +378,34 @@ export const RewardedAdModal: React.FC<RewardedAdModalProps> = ({ onSuccess, onC
           </div>
         )}
 
-        {/* PHASE 3: COMPLETED */}
+        {/* ── PHASE: COMPLETED ── */}
         {phase === 'completed' && (
-          <div className="p-8 text-center flex flex-col items-center justify-center space-y-3 animate-scaleUp">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-              <CheckCircle2 className="w-8 h-8" />
+          <div className="bg-[#0a0e1a] border border-emerald-500/30 rounded-2xl p-8 text-center flex flex-col items-center space-y-3">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <CheckCircle2 className="w-9 h-9 text-emerald-400" />
             </div>
-            <h3 className="text-lg font-bold text-white">Reward Earned!</h3>
-            <p className="text-xs text-slate-300">
-              ₹{rewardAmount} has been credited to your verified wallet ledger.
-            </p>
+            <h3 className="text-lg font-extrabold text-white">Reward Unlocked! 🎉</h3>
+            <p className="text-2xl font-black text-emerald-400">+₹{rewardAmount}</p>
+            <p className="text-xs text-slate-400">Credited to your Vora Earning wallet</p>
           </div>
         )}
 
-        {/* PHASE 4: ERROR / UNAVAILABLE */}
+        {/* ── PHASE: ERROR ── */}
         {phase === 'error' && (
-          <div className="p-6 text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto">
-              <AlertCircle className="w-6 h-6" />
+          <div className="bg-[#0a0e1a] border border-slate-800 rounded-2xl p-6 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6 text-rose-400" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Advertisement Unavailable</h3>
+              <h3 className="text-sm font-bold text-white">Ad Unavailable</h3>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                {errorMessage || 'Please try again later or check your network connection.'}
+                {errorMessage || 'Please try again. Check your network connection.'}
               </p>
             </div>
-            <div className="flex space-x-2 pt-2">
+            <div className="flex space-x-2">
               <button
-                onClick={() => {
-                  sound.playTap();
-                  onClose();
-                }}
-                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300"
+                onClick={() => { sound.playTap(); onClose(); }}
+                className="flex-1 py-2.5 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300"
               >
                 Close
               </button>
@@ -275,26 +413,27 @@ export const RewardedAdModal: React.FC<RewardedAdModalProps> = ({ onSuccess, onC
                 onClick={() => {
                   sound.playTap();
                   setPhase('loading');
-                  api.requestAdToken().then((r) => {
+                  setCountdown(15);
+                  api.requestAdToken().then(r => {
                     setAdToken(r.token);
                     setRewardAmount(r.rewardAmount);
                     setTimeout(() => {
                       setPhase('playing');
-                      setCountdown(15);
                       setWatchStartTime(Date.now());
-                    }, 1200);
-                  }).catch((e) => {
+                    }, 1800);
+                  }).catch(e => {
                     setPhase('error');
                     setErrorMessage(e.message);
                   });
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs font-bold text-slate-950"
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 text-xs font-bold text-white"
               >
                 Try Again
               </button>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
