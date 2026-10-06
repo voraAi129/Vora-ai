@@ -759,7 +759,38 @@ app.get("/api/transactions", requireAuth, (req, res) => {
   });
 });
 app.get("/api/system/settings", (req, res) => {
-  res.json({ settings: db.settings });
+  res.json({
+    settings: {
+      appName: db.settings.appName,
+      maintenanceMode: db.settings.maintenanceMode,
+      minSupportedVersion: db.settings.minSupportedVersion,
+      latestVersion: db.settings.latestVersion,
+      forceUpdateEnabled: db.settings.forceUpdateEnabled,
+      updateUrl: db.settings.updateUrl,
+      minRechargeAmount: db.settings.minRechargeAmount,
+      maxRechargeAmount: db.settings.maxRechargeAmount,
+      minWithdrawalAmount: db.settings.minWithdrawalAmount,
+      maxWithdrawalAmount: db.settings.maxWithdrawalAmount,
+      withdrawalFeePercentage: db.settings.withdrawalFeePercentage,
+      quickRechargeChips: db.settings.quickRechargeChips,
+      termsAndConditions: db.settings.termsAndConditions,
+      privacyPolicy: db.settings.privacyPolicy,
+      refundPolicy: db.settings.refundPolicy,
+      withdrawalPolicy: db.settings.withdrawalPolicy,
+      riskDisclosure: db.settings.riskDisclosure,
+      supportEmail: db.settings.supportEmail,
+      supportPhone: db.settings.supportPhone,
+      upiId: db.settings.upiId || "9266428368-i638-2@ibl",
+      upiPayeeName: db.settings.upiPayeeName || "Vora Earning",
+      adMobAppId: db.settings.adMobAppId,
+      rewardedAdUnitId: db.settings.rewardedAdUnitId,
+      bannerAdUnitId: db.settings.bannerAdUnitId,
+      interstitialAdUnitId: db.settings.interstitialAdUnitId,
+      rewardPerAd: db.settings.rewardPerAd,
+      dailyMaxAds: db.settings.dailyMaxAds,
+      cooldownSeconds: db.settings.cooldownSeconds
+    }
+  });
 });
 app.post("/api/withdrawal/create", requireAuth, (req, res) => {
   const { amount, accountHolderName, bankAccountNumber, ifsc, upiId } = req.body;
@@ -1622,33 +1653,6 @@ app.post("/api/support/tickets", requireAuth, (req, res) => {
 app.get("/api/support/tickets", requireAuth, (req, res) => {
   const userTickets = db.supportTickets.filter((t) => t.userId === req.user.id);
   res.json({ tickets: userTickets });
-});
-app.get("/api/system/settings", (req, res) => {
-  res.json({
-    settings: {
-      appName: db.settings.appName,
-      maintenanceMode: db.settings.maintenanceMode,
-      minSupportedVersion: db.settings.minSupportedVersion,
-      latestVersion: db.settings.latestVersion,
-      forceUpdateEnabled: db.settings.forceUpdateEnabled,
-      updateUrl: db.settings.updateUrl,
-      minRechargeAmount: db.settings.minRechargeAmount,
-      maxRechargeAmount: db.settings.maxRechargeAmount,
-      minWithdrawalAmount: db.settings.minWithdrawalAmount,
-      maxWithdrawalAmount: db.settings.maxWithdrawalAmount,
-      withdrawalFeePercentage: db.settings.withdrawalFeePercentage,
-      quickRechargeChips: db.settings.quickRechargeChips,
-      termsAndConditions: db.settings.termsAndConditions,
-      privacyPolicy: db.settings.privacyPolicy,
-      refundPolicy: db.settings.refundPolicy,
-      withdrawalPolicy: db.settings.withdrawalPolicy,
-      riskDisclosure: db.settings.riskDisclosure,
-      supportEmail: db.settings.supportEmail,
-      supportPhone: db.settings.supportPhone,
-      upiId: db.settings.upiId || "9266428368-i638-2@ibl",
-      upiPayeeName: db.settings.upiPayeeName || "Vora Earning"
-    }
-  });
 });
 app.get("/api/admin/dashboard", requireAdmin, (req, res) => {
   const totalUsers = db.users.filter((u) => u.role === "USER").length;

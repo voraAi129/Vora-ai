@@ -1172,7 +1172,38 @@ app.get('/api/transactions', requireAuth, (req: AuthenticatedRequest, res: Respo
 
 // System Settings Public Endpoint
 app.get('/api/system/settings', (req: Request, res: Response) => {
-  res.json({ settings: db.settings });
+  res.json({
+    settings: {
+      appName: db.settings.appName,
+      maintenanceMode: db.settings.maintenanceMode,
+      minSupportedVersion: db.settings.minSupportedVersion,
+      latestVersion: db.settings.latestVersion,
+      forceUpdateEnabled: db.settings.forceUpdateEnabled,
+      updateUrl: db.settings.updateUrl,
+      minRechargeAmount: db.settings.minRechargeAmount,
+      maxRechargeAmount: db.settings.maxRechargeAmount,
+      minWithdrawalAmount: db.settings.minWithdrawalAmount,
+      maxWithdrawalAmount: db.settings.maxWithdrawalAmount,
+      withdrawalFeePercentage: db.settings.withdrawalFeePercentage,
+      quickRechargeChips: db.settings.quickRechargeChips,
+      termsAndConditions: db.settings.termsAndConditions,
+      privacyPolicy: db.settings.privacyPolicy,
+      refundPolicy: db.settings.refundPolicy,
+      withdrawalPolicy: db.settings.withdrawalPolicy,
+      riskDisclosure: db.settings.riskDisclosure,
+      supportEmail: db.settings.supportEmail,
+      supportPhone: db.settings.supportPhone,
+      upiId: db.settings.upiId || '9266428368-i638-2@ibl',
+      upiPayeeName: db.settings.upiPayeeName || 'Vora Earning',
+      adMobAppId: db.settings.adMobAppId,
+      rewardedAdUnitId: db.settings.rewardedAdUnitId,
+      bannerAdUnitId: db.settings.bannerAdUnitId,
+      interstitialAdUnitId: db.settings.interstitialAdUnitId,
+      rewardPerAd: db.settings.rewardPerAd,
+      dailyMaxAds: db.settings.dailyMaxAds,
+      cooldownSeconds: db.settings.cooldownSeconds
+    }
+  });
 });
 
 // Create Withdrawal Request
@@ -2273,33 +2304,8 @@ app.get('/api/support/tickets', requireAuth, (req: AuthenticatedRequest, res: Re
   res.json({ tickets: userTickets });
 });
 
-app.get('/api/system/settings', (req: Request, res: Response) => {
-  res.json({
-    settings: {
-      appName: db.settings.appName,
-      maintenanceMode: db.settings.maintenanceMode,
-      minSupportedVersion: db.settings.minSupportedVersion,
-      latestVersion: db.settings.latestVersion,
-      forceUpdateEnabled: db.settings.forceUpdateEnabled,
-      updateUrl: db.settings.updateUrl,
-      minRechargeAmount: db.settings.minRechargeAmount,
-      maxRechargeAmount: db.settings.maxRechargeAmount,
-      minWithdrawalAmount: db.settings.minWithdrawalAmount,
-      maxWithdrawalAmount: db.settings.maxWithdrawalAmount,
-      withdrawalFeePercentage: db.settings.withdrawalFeePercentage,
-      quickRechargeChips: db.settings.quickRechargeChips,
-      termsAndConditions: db.settings.termsAndConditions,
-      privacyPolicy: db.settings.privacyPolicy,
-      refundPolicy: db.settings.refundPolicy,
-      withdrawalPolicy: db.settings.withdrawalPolicy,
-      riskDisclosure: db.settings.riskDisclosure,
-      supportEmail: db.settings.supportEmail,
-      supportPhone: db.settings.supportPhone,
-      upiId: db.settings.upiId || '9266428368-i638-2@ibl',
-      upiPayeeName: db.settings.upiPayeeName || 'Vora Earning'
-    }
-  });
-});
+// (System settings route defined earlier - single canonical route)
+
 
 // ==========================================
 // SECURE ADMIN ENDPOINTS (RBAC ENFORCED)
