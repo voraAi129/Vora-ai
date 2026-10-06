@@ -38,14 +38,14 @@ interface HomeScreenProps {
 
 const QUICK_AMOUNTS = [100, 250, 500, 1000, 2000, 5000, 10000];
 
-// Rotating real-brand Google AdMob style banner ads
+// Rotating Google AdMob Banner Ads (Real-Brand Dynamic AdMob Banners)
 const BANNER_ADS = [
-  { brand: 'Swiggy', text: 'Order food in 30 mins! 60% OFF your first order 🍕', color: '#FC8019', bg: 'from-orange-950/60 to-slate-950' },
-  { brand: 'Amazon', text: 'Great Indian Sale — Up to 80% OFF! Shop Now 🛒', color: '#FF9900', bg: 'from-yellow-950/60 to-slate-950' },
-  { brand: 'Flipkart', text: 'Big Billion Days — Best deals on Electronics 📱', color: '#2874F0', bg: 'from-blue-950/60 to-slate-950' },
-  { brand: 'Zepto', text: 'Groceries delivered in 10 minutes! ₹50 OFF 🛍️', color: '#8B5CF6', bg: 'from-purple-950/60 to-slate-950' },
-  { brand: 'Zomato', text: 'Order from top restaurants near you 🍱 Use ZOMATO50', color: '#E23744', bg: 'from-red-950/60 to-slate-950' },
-  { brand: 'Paytm', text: 'Pay bills & earn cashback! ₹25 bonus on first pay 💳', color: '#00B9F1', bg: 'from-cyan-950/60 to-slate-950' },
+  { brand: 'Swiggy', text: 'Order food in 30 mins! 60% OFF your first order 🍕', cta: 'ORDER NOW', color: '#FC8019', bg: 'from-orange-950/80 via-slate-900 to-slate-950', link: 'https://swiggy.com' },
+  { brand: 'Amazon', text: 'Great Indian Festival — Up to 80% OFF! Shop Now 🛒', cta: 'SHOP NOW', color: '#FF9900', bg: 'from-amber-950/80 via-slate-900 to-slate-950', link: 'https://amazon.in' },
+  { brand: 'Flipkart', text: 'Big Billion Days — Unbeatable deals on Smartphones 📱', cta: 'EXPLORE', color: '#2874F0', bg: 'from-blue-950/80 via-slate-900 to-slate-950', link: 'https://flipkart.com' },
+  { brand: 'Zepto', text: '10-Minute Instant Grocery Delivery! ₹100 Cashback 🛍️', cta: 'GET APP', color: '#8B5CF6', bg: 'from-purple-950/80 via-slate-900 to-slate-950', link: 'https://zepto.in' },
+  { brand: 'Zomato', text: 'Top Rated Restaurants Near You 🍱 Use Code: ZOMATO50', cta: 'ORDER', color: '#E23744', bg: 'from-red-950/80 via-slate-900 to-slate-950', link: 'https://zomato.com' },
+  { brand: 'Paytm', text: 'Fast UPI Payments & Cashback Rewards! 💳', cta: 'PAY NOW', color: '#00B9F1', bg: 'from-cyan-950/80 via-slate-900 to-slate-950', link: 'https://paytm.com' },
 ];
 
 const BannerAd: React.FC = () => {
@@ -58,22 +58,62 @@ const BannerAd: React.FC = () => {
       setTimeout(() => {
         setIdx(i => (i + 1) % BANNER_ADS.length);
         setVisible(true);
-      }, 350);
-    }, 4000);
+      }, 300);
+    }, 3500);
     return () => clearInterval(interval);
   }, []);
 
   const ad = BANNER_ADS[idx];
+
   return (
-    <div className={`p-2.5 rounded-xl bg-gradient-to-r ${ad.bg} border border-slate-800/80 flex items-center justify-between text-xs transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="flex items-center space-x-2 flex-1 min-w-0">
-        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold shrink-0" style={{ background: ad.color + '25', color: ad.color }}>
-          AD
-        </span>
-        <span className="font-bold text-[10px] shrink-0" style={{ color: ad.color }}>{ad.brand}</span>
-        <span className="text-[10px] text-slate-300 truncate">{ad.text}</span>
+    <div className="relative overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900 shadow-md">
+      {/* Top AdMob Header Tag */}
+      <div className="flex items-center justify-between px-2.5 py-0.5 bg-slate-950/90 border-b border-slate-800/60 text-[9px] text-slate-400">
+        <div className="flex items-center space-x-1">
+          <span className="px-1 py-[1px] rounded bg-amber-500/20 text-amber-400 font-extrabold text-[8px] tracking-wider border border-amber-500/30">
+            Ad
+          </span>
+          <span className="font-semibold text-slate-300">Ads by Google</span>
+        </div>
+        <div className="flex items-center space-x-1 text-[8px] text-slate-500">
+          <span className="hover:underline cursor-pointer">AdMob ca-app-pub-3940...</span>
+          <span className="text-slate-600">ℹ️</span>
+        </div>
       </div>
-      <span className="text-[8px] text-slate-600 font-mono shrink-0 ml-1">Google</span>
+
+      {/* Main Banner Content */}
+      <a
+        href={ad.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => sound.playTap()}
+        className={`p-3 bg-gradient-to-r ${ad.bg} flex items-center justify-between transition-all duration-300 cursor-pointer block ${
+          visible ? 'opacity-100 scale-100' : 'opacity-0 scale-98'
+        }`}
+      >
+        <div className="flex items-center space-x-2.5 flex-1 min-w-0 pr-2">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 shadow-lg text-white font-sans"
+            style={{ background: ad.color }}
+          >
+            {ad.brand[0]}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-1.5">
+              <span className="font-black text-xs tracking-tight text-white">{ad.brand}</span>
+              <span className="text-[9px] px-1 py-0.2 rounded bg-white/10 text-slate-300 font-mono">Verified Ad</span>
+            </div>
+            <p className="text-[11px] text-slate-200 truncate font-medium mt-0.5">{ad.text}</p>
+          </div>
+        </div>
+
+        <div
+          className="px-3 py-1.5 rounded-lg text-slate-950 font-black text-[10px] tracking-wider shrink-0 shadow-md transform active:scale-95 transition-all flex items-center space-x-1"
+          style={{ background: ad.color }}
+        >
+          <span>{ad.cta}</span>
+        </div>
+      </a>
     </div>
   );
 };
@@ -125,9 +165,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
   // Mandatory First Recharge Paywall State
   const [showRechargeRequiredModal, setShowRechargeRequiredModal] = useState<boolean>(false);
   const [rechargeModalMessage, setRechargeModalMessage] = useState<string>('');
+  const [minRecharge, setMinRecharge] = useState<number>(100);
 
   // Check if first recharge is required
-  const isFirstRechargeDone = (wallet.totalDeposited || 0) > 0 || (wallet.availableBalance || 0) >= 100;
+  const isFirstRechargeDone = (wallet.totalDeposited || 0) > 0 || (wallet.availableBalance || 0) >= minRecharge;
 
   // Gated Ad Watcher
   const handleWatchAdGated = () => {
@@ -143,12 +184,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
   // Load wallet & session data
   const refreshData = async () => {
     try {
-      const [walletRes, rewardsRes, notifsRes] = await Promise.all([
+      const [walletRes, rewardsRes, notifsRes, sysRes] = await Promise.all([
         api.getWallet(),
         api.getRewards(),
-        api.getNotifications()
+        api.getNotifications(),
+        api.getSystemSettings().catch(() => null)
       ]);
       setWallet(walletRes);
+
+      if (sysRes?.settings?.minRechargeAmount) {
+        setMinRecharge(sysRes.settings.minRechargeAmount);
+      }
 
       if (rewardsRes.serverTime) {
         const offset = new Date(rewardsRes.serverTime).getTime() - Date.now();
@@ -1014,7 +1060,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
                 className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-emerald-400 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/25 active:scale-95 transition-all flex items-center justify-center space-x-2"
               >
                 <ArrowDownLeft className="w-5 h-5 text-slate-950 stroke-[3]" />
-                <span>Abhi Recharge Karein (₹100 se start)</span>
+                <span>Abhi Recharge Karein (₹{minRecharge} se start)</span>
               </button>
 
               <button

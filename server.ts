@@ -1161,6 +1161,103 @@ app.get('/api/transactions', requireAuth, (req: AuthenticatedRequest, res: Respo
   });
 });
 
+// System Settings Public Endpoint
+app.get('/api/system/settings', (req: Request, res: Response) => {
+  res.json({ settings: db.settings });
+});
+
+// Create Withdrawal Request
+app.post('/api/withdrawal/create', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const { amount, accountHolderName, bankAccountNumber, ifsc, upiId } = req.body;
+  const numAmount = Number(amount);
+
+  if (isNaN(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ error: 'Valid withdrawal amount is required' });
+  }
+
+  const { minWithdrawalAmount, maxWithdrawalAmount, withdrawalFeePercentage } = db.settings;
+  const min = minWithdrawalAmount || 200;
+  const max = maxWithdrawalAmount || 25000;
+
+  if (numAmount < min || numAmount > max) {
+    return res.status(400).json({
+      error: `Withdrawal amount must be between ₹${min.toLocaleString('en-IN')} and ₹${max.toLocaleString('en-IN')}`
+    });
+  }
+
+  const wallet = getWallet(req.user!.id);
+  if (wallet.availableBalance < numAmount) {
+    return res.status(400).json({
+      error: `Insufficient available balance. You have ₹${wallet.availableBalance}, requested ₹${numAmount}`
+    });
+  }
+
+  const feePct = withdrawalFeePercentage || 0;
+  const fee = Math.round((numAmount * feePct) / 100);
+  const netAmount = numAmount - fee;
+
+  const withdrawalId = `wdr_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+  const withdrawal: WithdrawalRequest = {
+    id: withdrawalId,
+    userId: req.user!.id,
+    userName: req.user!.name,
+    userMobile: req.user!.mobile,
+    amount: numAmount,
+    fee,
+    netAmount,
+    accountHolderName: accountHolderName || req.user!.name,
+    bankAccountNumber: bankAccountNumber || '',
+    ifsc: ifsc || '',
+    upiId: upiId || '',
+    status: 'REQUESTED',
+    requestedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  wallet.availableBalance -= numAmount;
+  wallet.pendingBalance += numAmount;
+  wallet.updatedAt = new Date().toISOString();
+
+  if (!db.withdrawals) db.withdrawals = [];
+  db.withdrawals.unshift(withdrawal);
+
+  const tx: TransactionRecord = {
+    id: `tx_wdr_${Date.now()}`,
+    userId: req.user!.id,
+    amount: -numAmount,
+    type: 'WITHDRAWAL',
+    status: 'PENDING',
+    description: `Withdrawal Request to ${upiId || bankAccountNumber || 'Bank Account'}`,
+    referenceId: withdrawal.id,
+    balanceAfter: wallet.availableBalance,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  db.transactions.unshift(tx);
+
+  saveDb();
+
+  sendNotification(
+    req.user!.id,
+    'Withdrawal Requested 💸',
+    `Your withdrawal request of ₹${numAmount} has been registered and is under processing.`,
+    'INFO'
+  );
+
+  res.json({
+    success: true,
+    withdrawal,
+    walletBalance: wallet.availableBalance
+  });
+});
+
+// Get User Withdrawal History
+app.get('/api/withdrawal/history', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  if (!db.withdrawals) db.withdrawals = [];
+  const userWithdrawals = db.withdrawals.filter(w => w.userId === req.user!.id);
+  res.json({ withdrawals: userWithdrawals });
+});
+
 // ==========================================
 // RECHARGE & MANUAL UPI DEPOSIT ENDPOINTS
 // ==========================================
@@ -1273,7 +1370,7 @@ app.post('/api/admin/upi-deposits/:id/approve', requireAdmin, (req: Authenticate
   addTransaction(
     deposit.userId,
     deposit.amount,
-    'DEPOSIT',
+    'RECHARGE',
     'SUCCESS',
     `Manual UPI Recharge Verified (UTR: ${deposit.utr})`,
     deposit.id
@@ -1287,12 +1384,16 @@ app.post('/api/admin/upi-deposits/:id/approve', requireAdmin, (req: Authenticate
     'SUCCESS'
   );
 
-  addAuditLog(req.user!.id, 'APPROVE_UPI_DEPOSIT', {
-    depositId: deposit.id,
-    targetUserId: deposit.userId,
-    amount: deposit.amount,
-    utr: deposit.utr
-  });
+  addAuditLog(
+    req.user!.id,
+    req.user!.name,
+    'APPROVE_UPI_DEPOSIT',
+    `deposit:${deposit.id}`,
+    'PENDING',
+    'APPROVED',
+    `Recharge of ₹${deposit.amount} approved for ${deposit.userName}`,
+    req.ip
+  );
 
   saveDb();
 
@@ -1332,13 +1433,16 @@ app.post('/api/admin/upi-deposits/:id/reject', requireAdmin, (req: Authenticated
     'ALERT'
   );
 
-  addAuditLog(req.user!.id, 'REJECT_UPI_DEPOSIT', {
-    depositId: deposit.id,
-    targetUserId: deposit.userId,
-    amount: deposit.amount,
-    utr: deposit.utr,
-    reason: rejectReason
-  });
+  addAuditLog(
+    req.user!.id,
+    req.user!.name,
+    'REJECT_UPI_DEPOSIT',
+    `deposit:${deposit.id}`,
+    'PENDING',
+    'REJECTED',
+    rejectReason,
+    req.ip
+  );
 
   saveDb();
 

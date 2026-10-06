@@ -420,7 +420,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         break;
       }
       case 't3': {
-        const res = await fetch(`${LIVE_BACKEND_URL}/api/auth/login`, {
+        const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mobile: '9999988888', password: 'VoraUser123!' })
@@ -431,7 +431,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       }
       case 't4': {
         try {
-          const res = await fetch(`${LIVE_BACKEND_URL}/api/admin/dashboard`, {
+          const res = await fetch('/api/admin/dashboard', {
             headers: { Authorization: 'Bearer mock_invalid_user_token' }
           });
           if (res.status !== 401 && res.status !== 403) {
@@ -934,7 +934,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             ) : (
               upiDeposits
                 .filter(d => upiFilter === 'ALL' || d.status === upiFilter)
-                .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                 .map((dep) => (
                   <div key={dep.id} className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
                     {/* Top row */}
@@ -948,7 +948,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         }`}>{dep.status}</span>
                       </div>
                       <span className="text-[9px] text-slate-500 font-mono">
-                        {new Date(dep.submittedAt).toLocaleDateString('en-IN')} {new Date(dep.submittedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                        {new Date(dep.createdAt).toLocaleDateString('en-IN')} {new Date(dep.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                       </span>
                     </div>
 
@@ -964,14 +964,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-400">UTR:</span>
-                        <span className="text-cyan-400 font-bold">{dep.utrNumber || '—'}</span>
+                        <span className="text-cyan-400 font-bold">{dep.utr || '—'}</span>
                       </div>
-                      {dep.upiId && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">UPI ID:</span>
-                          <span className="text-slate-300">{dep.upiId}</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Screenshot */}
@@ -985,8 +979,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     )}
 
                     {/* Note */}
-                    {dep.note && (
-                      <p className="text-[10px] text-slate-400 italic">Note: {dep.note}</p>
+                    {(dep.rejectionReason || (dep as any).note) && (
+                      <p className="text-[10px] text-slate-400 italic">Note: {dep.rejectionReason || (dep as any).note}</p>
                     )}
 
                     {/* Action buttons — only for PENDING */}
