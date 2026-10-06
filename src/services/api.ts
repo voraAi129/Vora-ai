@@ -90,12 +90,14 @@ class ApiService {
     const baseUrl = BASE_URL ? BASE_URL.replace(/\/$/, '') : LIVE_BACKEND_URL;
     const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${cleanEndpoint}`;
 
+    let serverReachable = false;
     try {
       const response = await fetch(url, {
         ...options,
         headers
       });
 
+      serverReachable = true; // server responded (even with error)
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
@@ -108,17 +110,20 @@ class ApiService {
 
       return data as T;
     } catch (err: unknown) {
-      // If network fails (e.g. standalone APK or offline), use offline fallback response
-      try {
-        return this.handleOfflineFallback<T>(endpoint, options);
-      } catch {
-        if (typeof window !== 'undefined' && !navigator.onLine) {
-          if (this.onOfflineCallback) {
-            this.onOfflineCallback();
+      // Only use offline fallback when the server was NOT reachable (network failure)
+      // Do NOT fallback on HTTP errors (4xx/5xx) returned by the server
+      if (!serverReachable) {
+        try {
+          return this.handleOfflineFallback<T>(endpoint, options);
+        } catch {
+          if (typeof window !== 'undefined' && !navigator.onLine) {
+            if (this.onOfflineCallback) {
+              this.onOfflineCallback();
+            }
           }
         }
-        throw err;
       }
+      throw err;
     }
   }
 
@@ -721,13 +726,18 @@ class ApiService {
         saveStoredLocalDeposits(list);
       }
       return res;
-    } catch {
+    } catch (err: any) {
+      // Only return fake success when truly offline (no network)
+      // If online, re-throw so the user sees the real error from server
+      if (navigator.onLine) {
+        throw err;
+      }
       return {
         success: true,
         depositId: depId,
         amount,
         utr,
-        message: 'Payment proof submitted! Verification in progress.'
+        message: 'Payment proof saved locally. Will be submitted once you are online.'
       };
     }
   }
