@@ -21,7 +21,8 @@ import {
   AlertCircle,
   X,
   Lock,
-  RotateCcw
+  RotateCcw,
+  Gift
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
@@ -32,7 +33,7 @@ import { User, WalletSummary, RewardSession, RewardCampaign } from '../types';
 
 interface HomeScreenProps {
   user: User;
-  onNavigate: (view: 'recharge' | 'withdraw' | 'history' | 'profile' | 'notifications' | 'admin') => void;
+  onNavigate: (view: 'recharge' | 'withdraw' | 'history' | 'profile' | 'notifications' | 'admin' | 'referral') => void;
   onWatchAd: () => void;
 }
 
@@ -566,6 +567,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
           <span className="text-sm font-bold font-mono text-slate-200 mt-1">
             ₹{Math.round(animatedWithdrawn).toLocaleString('en-IN')}
           </span>
+        </div>
+      </div>
+
+      {/* ===================== REFER & EARN BANNER CARD ===================== */}
+      <div
+        onClick={() => {
+          sound.playTap();
+          onNavigate('referral');
+        }}
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 border border-purple-500/30 p-3.5 shadow-lg shadow-purple-950/30 cursor-pointer active:scale-[0.98] transition-all"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-purple-600 p-[1.5px] shadow-md">
+              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                <Gift className="w-5 h-5 text-amber-400" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h4 className="text-xs font-black text-white uppercase tracking-wider">Refer & Earn Program</h4>
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-[9px] font-bold border border-amber-500/30">
+                  1% Comm.
+                </span>
+              </div>
+              <p className="text-[11px] text-purple-200 mt-0.5">
+                Invite friends & earn ₹50 + 1% on every recharge!
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-purple-300 shrink-0" />
         </div>
       </div>
 

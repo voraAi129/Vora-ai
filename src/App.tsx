@@ -24,6 +24,7 @@ import { SupportModal } from './components/SupportModal';
 import { NotificationsModal } from './components/NotificationsModal';
 import { ExitConfirmModal } from './components/ExitConfirmModal';
 import { OfflineModal } from './components/OfflineModal';
+import { ReferralScreen } from './components/ReferralScreen';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -40,7 +41,7 @@ export default function App() {
     }
     return null;
   });
-  const [currentView, setCurrentView] = useState<'home' | 'recharge' | 'withdraw' | 'history' | 'profile' | 'admin'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'recharge' | 'withdraw' | 'history' | 'profile' | 'admin' | 'referral'>('home');
   const [systemSettings, setSystemSettings] = useState<AppSettings | null>(null);
 
   // Modals
@@ -271,6 +272,13 @@ export default function App() {
               onOpenLegal={(tab) => setLegalTab(tab)}
               onOpenSupport={() => setIsSupportOpen(true)}
               onNavigate={(v) => setCurrentView(v)}
+            />
+          )}
+
+          {currentView === 'referral' && (
+            <ReferralScreen
+              onBack={() => setCurrentView('home')}
+              onNavigateToRecharge={() => setCurrentView('recharge')}
             />
           )}
 

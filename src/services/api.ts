@@ -15,7 +15,9 @@ import {
   SystemNotification,
   SupportTicket,
   AuditLog,
-  UpiDeposit
+  UpiDeposit,
+  ReferralStats,
+  ReferralFriend
 } from '../types';
 
 export const LIVE_BACKEND_URL = 'https://vora-earning-production.up.railway.app';
@@ -368,6 +370,83 @@ class ApiService {
       return { success: true, message: 'Deposit rejected', deposit: dep } as unknown as T;
     }
 
+    // 22. User Referral Stats
+    if (cleanEndpoint === '/api/referral/stats') {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('vora_offline_user') : null;
+      const user = stored ? JSON.parse(stored) : null;
+      return {
+        referralCode: user?.referralCode || 'VORA8368',
+        shareUrl: `https://play.google.com/store/apps/details?id=com.vora.earning&referrer=${user?.referralCode || 'VORA8368'}`,
+        programEnabled: true,
+        rewardPerUser: 50,
+        commissionPercent: 1,
+        tier10Bonus: 500,
+        tier100Bonus: 5000,
+        minRechargeAmount: 100,
+        welcomeBonus: 25,
+        totalReferrals: 3,
+        activeRechargedCount: 2,
+        totalEarnings: 155,
+        referredUsers: [
+          {
+            id: 'ref_u1',
+            name: 'Rahul Verma',
+            mobileMasked: '982****321',
+            createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+            hasRecharged: true,
+            totalRecharged: 500,
+            rewardEarned: 55
+          },
+          {
+            id: 'ref_u2',
+            name: 'Amit Patel',
+            mobileMasked: '989****456',
+            createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+            hasRecharged: true,
+            totalRecharged: 1000,
+            rewardEarned: 60
+          },
+          {
+            id: 'ref_u3',
+            name: 'Pooja Singh',
+            mobileMasked: '971****789',
+            createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+            hasRecharged: false,
+            totalRecharged: 0,
+            rewardEarned: 0
+          }
+        ]
+      } as unknown as T;
+    }
+
+    // 23. Admin Referral Stats
+    if (cleanEndpoint === '/api/admin/referral-stats') {
+      return {
+        settings: {
+          referralProgramEnabled: true,
+          referralRewardPerUser: 50,
+          referralCommissionPercent: 1,
+          referralTier10Bonus: 500,
+          referralTier100Bonus: 5000,
+          referralMinRechargeAmount: 100,
+          referredUserSignupBonus: 25
+        },
+        totalReferredUsers: 24,
+        totalReferralBonusPaid: 3450,
+        topReferrers: [
+          {
+            id: 'usr_top1',
+            name: 'Prince Sharma',
+            mobile: '9999988888',
+            referralCode: 'VORA8888',
+            totalInvited: 12,
+            rechargedCount: 8,
+            totalEarnings: 980
+          }
+        ]
+      } as unknown as T;
+    }
+
     return { success: true } as unknown as T;
   }
 
@@ -393,6 +472,7 @@ class ApiService {
     confirmPassword: string;
     otp: string;
     termsAccepted: boolean;
+    referralCode?: string;
   }) {
     const res = await this.request<{ success: boolean; token: string; user: User }>('/api/auth/register', {
       method: 'POST',
@@ -903,6 +983,45 @@ class ApiService {
   public async exportBackup() {
     return this.request<{ backup: any }>('/api/admin/backup');
   }
+
+  // --- Referral Program ---
+  public async getReferralStats() {
+    return this.request<ReferralStats>('/api/referral/stats');
+  }
+
+  public async getAdminReferralStats() {
+    return this.request<{
+      settings: Partial<AppSettings>;
+      totalReferredUsers: number;
+      totalReferralBonusPaid: number;
+      topReferrers: Array<{
+        id: string;
+        name: string;
+        mobile: string;
+        referralCode: string;
+        totalInvited: number;
+        rechargedCount: number;
+        totalEarnings: number;
+      }>;
+    }>('/api/admin/referral-stats');
+  }
+
+  public async updateAdminReferralSettings(payload: {
+    referralProgramEnabled?: boolean;
+    referralRewardPerUser?: number;
+    referralCommissionPercent?: number;
+    referralTier10Bonus?: number;
+    referralTier100Bonus?: number;
+    referralMinRechargeAmount?: number;
+    referredUserSignupBonus?: number;
+    reason?: string;
+  }) {
+    return this.request<{ success: boolean; settings: Partial<AppSettings> }>('/api/admin/referral-settings', {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  }
 }
 
 export const api = new ApiService();
+

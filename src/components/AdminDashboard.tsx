@@ -29,7 +29,10 @@ import {
   Play,
   FlaskConical,
   Zap,
-  Server
+  Server,
+  Gift,
+  Percent,
+  Award
 } from 'lucide-react';
 import { api } from '../services/api';
 import { sound } from '../services/audio';
@@ -50,8 +53,39 @@ interface AdminDashboardProps {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'deposits' | 'users' | 'withdrawals' | 'ads' | 'campaigns' | 'tickets' | 'settings' | 'audit' | 'testing'
+    'overview' | 'deposits' | 'users' | 'withdrawals' | 'ads' | 'campaigns' | 'referrals' | 'tickets' | 'settings' | 'audit' | 'testing'
   >('overview');
+
+  // Referral Program Config & Stats
+  const [referralStats, setReferralStats] = useState<{
+    settings: Partial<AppSettings>;
+    totalReferredUsers: number;
+    totalReferralBonusPaid: number;
+    topReferrers: Array<{
+      id: string;
+      name: string;
+      mobile: string;
+      referralCode: string;
+      totalInvited: number;
+      rechargedCount: number;
+      totalEarnings: number;
+    }>;
+  }>({
+    settings: {
+      referralProgramEnabled: true,
+      referralRewardPerUser: 50,
+      referralCommissionPercent: 1,
+      referralTier10Bonus: 500,
+      referralTier100Bonus: 5000,
+      referralMinRechargeAmount: 100,
+      referredUserSignupBonus: 25
+    },
+    totalReferredUsers: 0,
+    totalReferralBonusPaid: 0,
+    topReferrers: []
+  });
+  const [isSavingReferralConfig, setIsSavingReferralConfig] = useState(false);
+  const [referralReason, setReferralReason] = useState('');
 
   // Stats & Alerts
   const [stats, setStats] = useState<any>(null);
@@ -195,14 +229,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       setLoading(false);
 
       // Load all admin modules in background
-      const [wRes, setRes, logRes, tktRes, upiRes, cmpRes, adRes] = await Promise.allSettled([
+      const [wRes, setRes, logRes, tktRes, upiRes, cmpRes, adRes, refRes] = await Promise.allSettled([
         api.getAdminWithdrawals(),
         api.getAdminSettings(),
         api.getAdminAuditLogs(),
         api.getAdminTickets(),
         api.getAdminUpiDeposits(),
         api.getAdminRewardConfig(),
-        api.getAdminAdConfig()
+        api.getAdminAdConfig(),
+        api.getAdminReferralStats()
       ]);
 
       if (wRes.status === 'fulfilled' && wRes.value?.withdrawals) setWithdrawals(wRes.value.withdrawals);
@@ -217,6 +252,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       if (adRes.status === 'fulfilled' && adRes.value) {
         setAdConfig(adRes.value);
         try { localStorage.setItem(CACHED_AD_CONFIG, JSON.stringify(adRes.value)); } catch {}
+      }
+      if (refRes.status === 'fulfilled' && refRes.value) {
+        setReferralStats(refRes.value);
       }
     } catch (err: any) {
       setLoading(false);
@@ -294,6 +332,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
           setAdConfig(r);
           try { localStorage.setItem(CACHED_AD_CONFIG, JSON.stringify(r)); } catch {}
         }
+      }).catch(() => {});
+    } else if (activeTab === 'referrals') {
+      api.getAdminReferralStats().then(r => {
+        if (r) setReferralStats(r);
       }).catch(() => {});
     } else if (activeTab === 'tickets') {
       api.getAdminTickets().then(r => { if (r?.tickets) setAdminTickets(r.tickets); }).catch(() => {});
@@ -458,6 +500,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       setToastMsg({ text: err.message || 'Failed to update ad configuration', type: 'error' });
     } finally {
       setIsSavingAdConfig(false);
+    }
+  };
+
+  // Save Referral Program Settings
+  const handleSaveReferralConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsSavingReferralConfig(true);
+      sound.playTap();
+      await api.updateAdminReferralSettings({
+        ...referralStats.settings,
+        reason: referralReason.trim() || 'Updated referral rewards & tier milestone bonuses'
+      });
+      sound.playSuccess();
+      setToastMsg({ text: 'Referral rewards, milestone bonuses & commission updated successfully!', type: 'success' });
+      loadDashboardData();
+    } catch (err: any) {
+      sound.playError();
+      setToastMsg({ text: err.message || 'Failed to update referral configuration', type: 'error' });
+    } finally {
+      setIsSavingReferralConfig(false);
     }
   };
 
@@ -663,6 +726,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
           { id: 'withdrawals', label: '💸 Withdrawals' },
           { id: 'ads', label: '📺 Ads & AdMob' },
           { id: 'campaigns', label: '🎯 Campaigns' },
+          { id: 'referrals', label: '🎁 Referrals' },
           { id: 'tickets', label: '🎫 Support' },
           { id: 'settings', label: '⚙️ Settings' },
           { id: 'audit', label: '📋 Audit Logs' },
@@ -1628,6 +1692,248 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </div>
           )}
         </div>
+      )}
+
+      {/* ================= TAB: REFERRAL PROGRAM CONTROL ================= */}
+      {activeTab === 'referrals' && (
+        <form onSubmit={handleSaveReferralConfig} className="flex-1 overflow-y-auto space-y-3.5 pr-1 text-xs">
+          {/* Header Info */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/50 via-slate-900 to-slate-900 border border-purple-500/30 space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Gift className="w-4 h-4 text-amber-400" />
+                <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+                  Refer & Earn Program Administration
+                </h3>
+              </div>
+              <span className="text-[9px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono font-bold">
+                RECHARGE TRIGGERED
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Configure 1-person reward, 1% recharge commission, 10 & 100 milestone bonuses, minimum recharge threshold, and inspect top referrers leaderboard.
+            </p>
+          </div>
+
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total Referred Users</span>
+              <p className="text-lg font-bold font-mono text-white mt-0.5">{referralStats.totalReferredUsers}</p>
+              <p className="text-[10px] text-emerald-400">Tracked in database</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total Bonuses Paid</span>
+              <p className="text-lg font-bold font-mono text-amber-400 mt-0.5">₹{referralStats.totalReferralBonusPaid}</p>
+              <p className="text-[10px] text-slate-400">Direct wallet credits</p>
+            </div>
+          </div>
+
+          {/* Program Toggle */}
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="font-bold text-white block">Enable Referral Program</span>
+              <span className="text-[10px] text-slate-400">Allow users to earn invite bonuses & commissions</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={referralStats.settings.referralProgramEnabled ?? true}
+              onChange={(e) =>
+                setReferralStats({
+                  ...referralStats,
+                  settings: { ...referralStats.settings, referralProgramEnabled: e.target.checked }
+                })
+              }
+              className="w-5 h-5 rounded text-amber-500 focus:ring-amber-500 bg-slate-950 border-slate-800"
+            />
+          </div>
+
+          {/* 1 Person Bonus & Recharge Commission */}
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+            <h4 className="font-bold text-white uppercase text-[10px] flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-indigo-400" />
+              Base Referral & Recharge Commission
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-slate-400 block mb-0.5 text-[10px]">1 Person Reward (₹)</label>
+                <input
+                  type="number"
+                  value={referralStats.settings.referralRewardPerUser ?? 50}
+                  onChange={(e) =>
+                    setReferralStats({
+                      ...referralStats,
+                      settings: { ...referralStats.settings, referralRewardPerUser: Number(e.target.value) }
+                    })
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                />
+                <span className="text-[9px] text-slate-500">Credited on 1st verified recharge</span>
+              </div>
+              <div>
+                <label className="text-slate-400 block mb-0.5 text-[10px]">Recharge Commission (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={referralStats.settings.referralCommissionPercent ?? 1}
+                  onChange={(e) =>
+                    setReferralStats({
+                      ...referralStats,
+                      settings: { ...referralStats.settings, referralCommissionPercent: Number(e.target.value) }
+                    })
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                />
+                <span className="text-[9px] text-slate-500">E.g. 1% of friend's recharge</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Milestones: 10 People & 100 People VIP */}
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+            <h4 className="font-bold text-white uppercase text-[10px] flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              Milestone Bonuses (10 & 100 Friends)
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-slate-400 block mb-0.5 text-[10px]">10 Friends Bonus (₹)</label>
+                <input
+                  type="number"
+                  value={referralStats.settings.referralTier10Bonus ?? 500}
+                  onChange={(e) =>
+                    setReferralStats({
+                      ...referralStats,
+                      settings: { ...referralStats.settings, referralTier10Bonus: Number(e.target.value) }
+                    })
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                />
+                <span className="text-[9px] text-slate-500">Extra lump-sum for 10 active invites</span>
+              </div>
+              <div>
+                <label className="text-slate-400 block mb-0.5 text-[10px]">100 Friends VIP Bonus (₹)</label>
+                <input
+                  type="number"
+                  value={referralStats.settings.referralTier100Bonus ?? 5000}
+                  onChange={(e) =>
+                    setReferralStats({
+                      ...referralStats,
+                      settings: { ...referralStats.settings, referralTier100Bonus: Number(e.target.value) }
+                    })
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                />
+                <span className="text-[9px] text-slate-500">Mega VIP bonus for 100 active invites</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Verification Rules & New User Bonus */}
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+            <h4 className="font-bold text-white uppercase text-[10px] flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              Qualification & Welcome Bonus Rules
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-slate-400 block mb-0.5 text-[10px]">Min Recharge for Reward (₹)</label>
+                <input
+                  type="number"
+                  value={referralStats.settings.referralMinRechargeAmount ?? 100}
+                  onChange={(e) =>
+                    setReferralStats({
+                      ...referralStats,
+                      settings: { ...referralStats.settings, referralMinRechargeAmount: Number(e.target.value) }
+                    })
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                />
+                <span className="text-[9px] text-slate-500">Friend must recharge min ₹100</span>
+              </div>
+              <div>
+                <label className="text-slate-400 block mb-0.5 text-[10px]">New User Signup Bonus (₹)</label>
+                <input
+                  type="number"
+                  value={referralStats.settings.referredUserSignupBonus ?? 25}
+                  onChange={(e) =>
+                    setReferralStats({
+                      ...referralStats,
+                      settings: { ...referralStats.settings, referredUserSignupBonus: Number(e.target.value) }
+                    })
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono"
+                />
+                <span className="text-[9px] text-slate-500">Welcome gift on entering code</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Reason */}
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+            <label className="text-slate-400 block mb-1 text-[10px]">Reason for Change (Audit Log)</label>
+            <input
+              type="text"
+              placeholder="e.g. Set 1 person ₹50, 1% commission, 10 tier ₹500, 100 tier ₹5000"
+              value={referralReason}
+              onChange={(e) => setReferralReason(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white text-xs"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSavingReferralConfig}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-slate-950 font-black text-xs shadow-lg shadow-purple-500/20 active:scale-95 transition-all flex items-center justify-center space-x-2"
+          >
+            {isSavingReferralConfig ? (
+              <Clock className="w-4 h-4 animate-spin text-slate-950" />
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Save Referral & Milestone Rules</span>
+              </>
+            )}
+          </button>
+
+          {/* Top Referrers Leaderboard */}
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 pt-3">
+            <h4 className="font-bold text-white uppercase text-[10px] flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              Top Referrers Ranking
+            </h4>
+            {referralStats.topReferrers && referralStats.topReferrers.length > 0 ? (
+              <div className="space-y-1.5">
+                {referralStats.topReferrers.map((r, i) => (
+                  <div
+                    key={r.id}
+                    className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 font-bold text-[10px] flex items-center justify-center">
+                        #{i + 1}
+                      </span>
+                      <div>
+                        <p className="font-semibold text-white text-xs">{r.name}</p>
+                        <p className="text-[10px] text-slate-400 font-mono">
+                          Code: <span className="text-amber-400">{r.referralCode}</span> • {r.mobile}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-emerald-400">₹{r.totalEarnings.toFixed(1)}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {r.rechargedCount}/{r.totalInvited} recharged
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-4 text-slate-500 text-[11px]">No referrers recorded yet</p>
+            )}
+          </div>
+        </form>
       )}
 
       {/* ================= TAB 6: SYSTEM SETTINGS ================= */}

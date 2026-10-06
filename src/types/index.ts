@@ -17,6 +17,10 @@ export interface User {
     ifsc?: string;
     upiId?: string;
   };
+  referralCode?: string;
+  referredBy?: string;
+  referralCount?: number;
+  totalReferralEarnings?: number;
 }
 
 export type TransactionType =
@@ -26,7 +30,9 @@ export type TransactionType =
   | 'AD_REWARD'
   | 'REFUND'
   | 'ADJUSTMENT'
-  | 'SESSION_PARTICIPATION';
+  | 'SESSION_PARTICIPATION'
+  | 'REFERRAL_COMMISSION'
+  | 'REFERRAL_BONUS';
 
 export type TransactionStatus =
   | 'INITIATED'
@@ -204,6 +210,13 @@ export interface AppSettings {
   supportPhone: string;
   upiId?: string;
   upiPayeeName?: string;
+  referralProgramEnabled?: boolean;
+  referralRewardPerUser?: number;       // Fixed bonus for 1 person (e.g. ₹50)
+  referralCommissionPercent?: number;    // % commission on friend's recharge (e.g. 1%)
+  referralTier10Bonus?: number;          // Extra bonus for 10 invites (e.g. ₹500)
+  referralTier100Bonus?: number;         // Extra VIP bonus for 100 invites (e.g. ₹5,000)
+  referralMinRechargeAmount?: number;    // Minimum recharge required to trigger bonus (e.g. ₹100)
+  referredUserSignupBonus?: number;      // New user welcome bonus (e.g. ₹25)
 }
 
 export type UpiDepositStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -223,3 +236,30 @@ export interface UpiDeposit {
   reviewedBy?: string;
   rejectionReason?: string;
 }
+
+export interface ReferralFriend {
+  id: string;
+  name: string;
+  mobileMasked: string;
+  createdAt: string;
+  hasRecharged: boolean;
+  totalRecharged: number;
+  rewardEarned: number;
+}
+
+export interface ReferralStats {
+  referralCode: string;
+  shareUrl: string;
+  programEnabled: boolean;
+  rewardPerUser: number;
+  commissionPercent: number;
+  tier10Bonus: number;
+  tier100Bonus: number;
+  minRechargeAmount: number;
+  welcomeBonus: number;
+  totalReferrals: number;
+  activeRechargedCount: number;
+  totalEarnings: number;
+  referredUsers: ReferralFriend[];
+}
+

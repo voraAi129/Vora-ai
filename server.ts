@@ -52,6 +52,10 @@ interface UserRecord {
     ifsc?: string;
     upiId?: string;
   };
+  referralCode?: string;
+  referredBy?: string;
+  referralCount?: number;
+  totalReferralEarnings?: number;
 }
 
 interface SessionRecord {
@@ -79,7 +83,7 @@ interface TransactionRecord {
   id: string;
   userId: string;
   amount: number;
-  type: 'RECHARGE' | 'WITHDRAWAL' | 'REWARD' | 'AD_REWARD' | 'REFUND' | 'ADJUSTMENT' | 'SESSION_PARTICIPATION';
+  type: 'RECHARGE' | 'WITHDRAWAL' | 'REWARD' | 'AD_REWARD' | 'REFUND' | 'ADJUSTMENT' | 'SESSION_PARTICIPATION' | 'REFERRAL_BONUS' | 'REFERRAL_COMMISSION';
   status: 'INITIATED' | 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
   description: string;
   referenceId?: string;
@@ -211,6 +215,13 @@ interface AppSettingsRecord {
   cooldownSeconds: number;
   upiId: string;
   upiPayeeName: string;
+  referralProgramEnabled: boolean;
+  referralRewardPerUser: number;        // Fixed bonus per invite (₹50)
+  referralCommissionPercent: number;    // % commission on friend's recharge (1%)
+  referralTier10Bonus: number;          // 10 friends milestone bonus (₹500)
+  referralTier100Bonus: number;         // 100 friends VIP milestone bonus (₹5000)
+  referralMinRechargeAmount: number;    // Min recharge required to trigger bonus (₹100)
+  referredUserSignupBonus: number;      // Welcome bonus for invited friend (₹25)
 }
 
 interface UpiDepositRequest {
@@ -300,7 +311,14 @@ const defaultSettings: AppSettingsRecord = {
   dailyMaxAds: 15,
   cooldownSeconds: 30,
   upiId: '9266428368-i638-2@ibl',
-  upiPayeeName: 'Vora Earning'
+  upiPayeeName: 'Vora Earning',
+  referralProgramEnabled: true,
+  referralRewardPerUser: 50,
+  referralCommissionPercent: 1,
+  referralTier10Bonus: 500,
+  referralTier100Bonus: 5000,
+  referralMinRechargeAmount: 100,
+  referredUserSignupBonus: 25
 };
 
 // Password hashing
@@ -528,11 +546,20 @@ function addTransaction(
   let balanceAfter = wallet.availableBalance;
 
   if (status === 'SUCCESS') {
-    if (type === 'RECHARGE' || type === 'REWARD' || type === 'AD_REWARD' || type === 'REFUND') {
+    if (
+      type === 'RECHARGE' ||
+      type === 'REWARD' ||
+      type === 'AD_REWARD' ||
+      type === 'REFUND' ||
+      type === 'REFERRAL_BONUS' ||
+      type === 'REFERRAL_COMMISSION'
+    ) {
       wallet.availableBalance += amount;
       balanceAfter = wallet.availableBalance;
       if (type === 'RECHARGE') wallet.totalDeposited += amount;
-      if (type === 'REWARD' || type === 'AD_REWARD') wallet.totalRewards += amount;
+      if (type === 'REWARD' || type === 'AD_REWARD' || type === 'REFERRAL_BONUS' || type === 'REFERRAL_COMMISSION') {
+        wallet.totalRewards += amount;
+      }
     } else if (type === 'ADJUSTMENT') {
       wallet.availableBalance += amount;
       balanceAfter = wallet.availableBalance;
@@ -557,6 +584,122 @@ function addTransaction(
   db.transactions.unshift(tx);
   saveDb();
   return tx;
+}
+
+// Referral Award & Milestone Engine
+function checkAndAwardReferralMilestones(referrerId: string, referredUserId: string, rechargeAmount: number) {
+  const referrer = db.users.find(u => u.id === referrerId);
+  const referredUser = db.users.find(u => u.id === referredUserId);
+  if (!referrer || !referredUser) return;
+
+  if (db.settings.referralProgramEnabled === false) return;
+
+  const baseReward = db.settings.referralRewardPerUser ?? 50;
+  const commPercent = db.settings.referralCommissionPercent ?? 1;
+  const tier10Reward = db.settings.referralTier10Bonus ?? 500;
+  const tier100Reward = db.settings.referralTier100Bonus ?? 5000;
+  const minRecharge = db.settings.referralMinRechargeAmount ?? 100;
+
+  if (rechargeAmount < minRecharge) return;
+
+  const baseTxRef = `ref_bonus_${referredUserId}`;
+  const alreadyGivenBase = db.transactions.some(t => t.userId === referrer.id && t.referenceId === baseTxRef);
+
+  // 1. Fixed Base Reward (given on first valid recharge)
+  if (!alreadyGivenBase && baseReward > 0) {
+    referrer.referralCount = (referrer.referralCount || 0) + 1;
+    referrer.totalReferralEarnings = (referrer.totalReferralEarnings || 0) + baseReward;
+
+    addTransaction(
+      referrer.id,
+      baseReward,
+      'REFERRAL_BONUS',
+      'SUCCESS',
+      `Referral Reward: ₹${baseReward} for inviting ${referredUser.name}`,
+      baseTxRef
+    );
+
+    sendNotification(
+      referrer.id,
+      'Referral Reward Credited! 🎁',
+      `₹${baseReward} added to your wallet! Your friend ${referredUser.name} completed a recharge of ₹${rechargeAmount}.`,
+      'SUCCESS'
+    );
+  }
+
+  // 2. Recharge Commission Percentage (e.g. 1% on every recharge!)
+  if (commPercent > 0) {
+    const commission = Math.max(1, Math.round((rechargeAmount * commPercent) / 100));
+    referrer.totalReferralEarnings = (referrer.totalReferralEarnings || 0) + commission;
+
+    addTransaction(
+      referrer.id,
+      commission,
+      'REFERRAL_COMMISSION',
+      'SUCCESS',
+      `Referral Commission (${commPercent}% of ₹${rechargeAmount}) from ${referredUser.name}`,
+      `ref_comm_${referredUserId}_${Date.now()}`
+    );
+
+    sendNotification(
+      referrer.id,
+      'Referral Commission Earned! 💸',
+      `You earned ₹${commission} (${commPercent}% commission) from ${referredUser.name}'s recharge of ₹${rechargeAmount}!`,
+      'SUCCESS'
+    );
+  }
+
+  // 3. 10 Friends Milestone (₹500 extra)
+  if ((referrer.referralCount || 0) >= 10 && tier10Reward > 0) {
+    const m10Ref = `milestone_10_${referrer.id}`;
+    const alreadyM10 = db.transactions.some(t => t.userId === referrer.id && t.referenceId === m10Ref);
+    if (!alreadyM10) {
+      referrer.totalReferralEarnings = (referrer.totalReferralEarnings || 0) + tier10Reward;
+
+      addTransaction(
+        referrer.id,
+        tier10Reward,
+        'REFERRAL_BONUS',
+        'SUCCESS',
+        `🎉 10 Friends Milestone Bonus unlocked!`,
+        m10Ref
+      );
+
+      sendNotification(
+        referrer.id,
+        '10 Friends Milestone Unlocked! 🚀',
+        `Congratulations! You reached 10 active referrals. A milestone bonus of ₹${tier10Reward} has been credited to your wallet!`,
+        'SUCCESS'
+      );
+    }
+  }
+
+  // 4. 100 Friends VIP Milestone (₹5000 extra)
+  if ((referrer.referralCount || 0) >= 100 && tier100Reward > 0) {
+    const m100Ref = `milestone_100_${referrer.id}`;
+    const alreadyM100 = db.transactions.some(t => t.userId === referrer.id && t.referenceId === m100Ref);
+    if (!alreadyM100) {
+      referrer.totalReferralEarnings = (referrer.totalReferralEarnings || 0) + tier100Reward;
+
+      addTransaction(
+        referrer.id,
+        tier100Reward,
+        'REFERRAL_BONUS',
+        'SUCCESS',
+        `👑 100 Friends VIP Milestone Bonus unlocked!`,
+        m100Ref
+      );
+
+      sendNotification(
+        referrer.id,
+        '100 Friends VIP Milestone Unlocked! 🏆',
+        `Incredible! You reached 100 active referrals. A VIP milestone bonus of ₹${tier100Reward} has been credited to your wallet!`,
+        'SUCCESS'
+      );
+    }
+  }
+
+  saveDb();
 }
 
 function addAuditLog(
@@ -899,8 +1042,16 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
 
   delete db.otpStore[mobile];
 
+  // Check Referral Code
+  const inputReferralCode = req.body.referralCode ? String(req.body.referralCode).trim().toUpperCase() : '';
+  let referrerUser: UserRecord | undefined;
+  if (inputReferralCode) {
+    referrerUser = db.users.find(u => u.referralCode && u.referralCode.toUpperCase() === inputReferralCode);
+  }
+
   // Hash password
   const { hash, salt } = hashPassword(password);
+  const codeSuffix = crypto.randomBytes(2).toString('hex').toUpperCase();
   const newUser: UserRecord = {
     id: `usr_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
     name: name.trim(),
@@ -910,30 +1061,58 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
     role: 'USER',
     status: 'ACTIVE',
     createdAt: new Date().toISOString(),
-    lastLoginAt: new Date().toISOString()
+    lastLoginAt: new Date().toISOString(),
+    referralCode: `VORA${codeSuffix}`,
+    referredBy: referrerUser ? referrerUser.id : undefined,
+    referralCount: 0,
+    totalReferralEarnings: 0
   };
 
   db.users.push(newUser);
 
-  // Initialize wallet
+  // Initialize wallet (with optional welcome bonus if joined via referral)
+  const welcomeBonus = referrerUser ? (db.settings.referredUserSignupBonus ?? 25) : 0;
   db.wallets[newUser.id] = {
     userId: newUser.id,
-    availableBalance: 0,
+    availableBalance: welcomeBonus,
     participatingBalance: 0,
     pendingBalance: 0,
     totalDeposited: 0,
     totalWithdrawn: 0,
-    totalRewards: 0,
+    totalRewards: welcomeBonus,
     updatedAt: new Date().toISOString()
   };
 
-  // Welcome registration notification
-  sendNotification(
-    newUser.id,
-    'Welcome to VORA EARNING!',
-    'Your account has been registered successfully. Explore 24-hour reward sessions and instant recharges.',
-    'SUCCESS'
-  );
+  if (welcomeBonus > 0 && referrerUser) {
+    addTransaction(
+      newUser.id,
+      welcomeBonus,
+      'REFERRAL_BONUS',
+      'SUCCESS',
+      `Welcome Bonus for joining with referral code ${referrerUser.referralCode}`,
+      `welcome_${newUser.id}`
+    );
+    sendNotification(
+      newUser.id,
+      'Welcome Bonus Credited! 🎁',
+      `₹${welcomeBonus} welcome bonus credited to your wallet for using referral code ${referrerUser.referralCode}.`,
+      'SUCCESS'
+    );
+    sendNotification(
+      referrerUser.id,
+      'Friend Registered! 👥',
+      `${newUser.name} registered using your referral code. You will earn ₹${db.settings.referralRewardPerUser || 50} bonus + ${db.settings.referralCommissionPercent || 1}% commission when they complete their first recharge!`,
+      'INFO'
+    );
+  } else {
+    // Welcome registration notification
+    sendNotification(
+      newUser.id,
+      'Welcome to VORA EARNING!',
+      'Your account has been registered successfully. Explore 24-hour reward sessions and instant recharges.',
+      'SUCCESS'
+    );
+  }
 
   // Create session
   const token = crypto.randomBytes(32).toString('hex');
@@ -958,7 +1137,8 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
       mobile: newUser.mobile,
       role: newUser.role,
       status: newUser.status,
-      createdAt: newUser.createdAt
+      createdAt: newUser.createdAt,
+      referralCode: newUser.referralCode
     }
   });
 });
@@ -1218,8 +1398,74 @@ app.get('/api/system/settings', (req: Request, res: Response) => {
       interstitialAdUnitId: db.settings.interstitialAdUnitId,
       rewardPerAd: db.settings.rewardPerAd,
       dailyMaxAds: db.settings.dailyMaxAds,
-      cooldownSeconds: db.settings.cooldownSeconds
+      cooldownSeconds: db.settings.cooldownSeconds,
+      referralProgramEnabled: db.settings.referralProgramEnabled ?? true,
+      referralRewardPerUser: db.settings.referralRewardPerUser ?? 50,
+      referralCommissionPercent: db.settings.referralCommissionPercent ?? 1,
+      referralTier10Bonus: db.settings.referralTier10Bonus ?? 500,
+      referralTier100Bonus: db.settings.referralTier100Bonus ?? 5000,
+      referralMinRechargeAmount: db.settings.referralMinRechargeAmount ?? 100,
+      referredUserSignupBonus: db.settings.referredUserSignupBonus ?? 25
     }
+  });
+});
+
+// User Referral Stats & Team Endpoint
+app.get('/api/referral/stats', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const user = db.users.find(u => u.id === req.user!.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  // Ensure user has referralCode
+  if (!user.referralCode) {
+    user.referralCode = `VORA${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+    saveDb();
+  }
+
+  const friends = db.users
+    .filter(u => u.referredBy === user.id)
+    .map(u => {
+      const uWallet = getWallet(u.id);
+      const totalRecharged = uWallet ? uWallet.totalDeposited : 0;
+      const hasRecharged = totalRecharged >= (db.settings.referralMinRechargeAmount ?? 100);
+      
+      // Calculate total earnings from this specific friend
+      const bonusTxs = db.transactions.filter(
+        t => t.userId === user.id && (
+          t.referenceId === `ref_bonus_${u.id}` || 
+          (t.referenceId && t.referenceId.startsWith(`ref_comm_${u.id}`))
+        )
+      );
+      const rewardEarned = bonusTxs.reduce((sum, t) => sum + t.amount, 0);
+
+      return {
+        id: u.id,
+        name: u.name,
+        mobileMasked: u.mobile.slice(0, 3) + '****' + u.mobile.slice(7),
+        createdAt: u.createdAt,
+        hasRecharged,
+        totalRecharged,
+        rewardEarned
+      };
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const activeRechargedCount = friends.filter(f => f.hasRecharged).length;
+  const totalEarnings = friends.reduce((sum, f) => sum + f.rewardEarned, 0);
+
+  res.json({
+    referralCode: user.referralCode,
+    shareUrl: `https://play.google.com/store/apps/details?id=com.vora.earning&referrer=${user.referralCode}`,
+    programEnabled: db.settings.referralProgramEnabled ?? true,
+    rewardPerUser: db.settings.referralRewardPerUser ?? 50,
+    commissionPercent: db.settings.referralCommissionPercent ?? 1,
+    tier10Bonus: db.settings.referralTier10Bonus ?? 500,
+    tier100Bonus: db.settings.referralTier100Bonus ?? 5000,
+    minRechargeAmount: db.settings.referralMinRechargeAmount ?? 100,
+    welcomeBonus: db.settings.referredUserSignupBonus ?? 25,
+    totalReferrals: friends.length,
+    activeRechargedCount,
+    totalEarnings,
+    referredUsers: friends
   });
 });
 
@@ -1440,6 +1686,12 @@ app.post('/api/admin/upi-deposits/:id/approve', requireAdmin, (req: Authenticate
     `₹${deposit.amount} has been verified and added to your wallet balance. (UTR: ${deposit.utr})`,
     'SUCCESS'
   );
+
+  // Trigger referral reward & commission for referrer
+  const rechargedUser = db.users.find(u => u.id === deposit.userId);
+  if (rechargedUser && rechargedUser.referredBy) {
+    checkAndAwardReferralMilestones(rechargedUser.referredBy, rechargedUser.id, deposit.amount);
+  }
 
   addAuditLog(
     req.user!.id,
@@ -2812,6 +3064,109 @@ app.put('/api/admin/settings', requireAdmin, (req: AuthenticatedRequest, res: Re
     oldVal,
     newVal,
     reason,
+    req.ip
+  );
+
+  saveDb();
+  res.json({ success: true, settings: db.settings });
+});
+
+// Admin Referral Program Analytics & Settings
+app.get('/api/admin/referral-stats', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  const allReferred = db.users.filter(u => !!u.referredBy);
+  const totalReferralBonusPaid = db.transactions
+    .filter(t => t.type === 'REFERRAL_BONUS' || t.type === 'REFERRAL_COMMISSION')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  // Top Referrers ranking
+  const referrers = db.users
+    .filter(u => (u.referralCount || 0) > 0 || db.users.some(r => r.referredBy === u.id))
+    .map(u => {
+      const friends = db.users.filter(f => f.referredBy === u.id);
+      const earnings = db.transactions
+        .filter(t => t.userId === u.id && (t.type === 'REFERRAL_BONUS' || t.type === 'REFERRAL_COMMISSION'))
+        .reduce((sum, t) => sum + t.amount, 0);
+      const rechargedCount = friends.filter(f => {
+        const w = getWallet(f.id);
+        return (w?.totalDeposited || 0) >= (db.settings.referralMinRechargeAmount || 100);
+      }).length;
+
+      return {
+        id: u.id,
+        name: u.name,
+        mobile: u.mobile,
+        referralCode: u.referralCode,
+        totalInvited: friends.length,
+        rechargedCount,
+        totalEarnings: earnings
+      };
+    })
+    .sort((a, b) => b.totalEarnings - a.totalEarnings);
+
+  res.json({
+    settings: {
+      referralProgramEnabled: db.settings.referralProgramEnabled ?? true,
+      referralRewardPerUser: db.settings.referralRewardPerUser ?? 50,
+      referralCommissionPercent: db.settings.referralCommissionPercent ?? 1,
+      referralTier10Bonus: db.settings.referralTier10Bonus ?? 500,
+      referralTier100Bonus: db.settings.referralTier100Bonus ?? 5000,
+      referralMinRechargeAmount: db.settings.referralMinRechargeAmount ?? 100,
+      referredUserSignupBonus: db.settings.referredUserSignupBonus ?? 25
+    },
+    totalReferredUsers: allReferred.length,
+    totalReferralBonusPaid,
+    topReferrers: referrers
+  });
+});
+
+app.put('/api/admin/referral-settings', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  const {
+    referralProgramEnabled,
+    referralRewardPerUser,
+    referralCommissionPercent,
+    referralTier10Bonus,
+    referralTier100Bonus,
+    referralMinRechargeAmount,
+    referredUserSignupBonus,
+    reason
+  } = req.body;
+
+  const oldVal = JSON.stringify({
+    enabled: db.settings.referralProgramEnabled,
+    base: db.settings.referralRewardPerUser,
+    comm: db.settings.referralCommissionPercent,
+    t10: db.settings.referralTier10Bonus,
+    t100: db.settings.referralTier100Bonus,
+    min: db.settings.referralMinRechargeAmount,
+    welcome: db.settings.referredUserSignupBonus
+  });
+
+  if (referralProgramEnabled !== undefined) db.settings.referralProgramEnabled = Boolean(referralProgramEnabled);
+  if (referralRewardPerUser !== undefined) db.settings.referralRewardPerUser = Number(referralRewardPerUser);
+  if (referralCommissionPercent !== undefined) db.settings.referralCommissionPercent = Number(referralCommissionPercent);
+  if (referralTier10Bonus !== undefined) db.settings.referralTier10Bonus = Number(referralTier10Bonus);
+  if (referralTier100Bonus !== undefined) db.settings.referralTier100Bonus = Number(referralTier100Bonus);
+  if (referralMinRechargeAmount !== undefined) db.settings.referralMinRechargeAmount = Number(referralMinRechargeAmount);
+  if (referredUserSignupBonus !== undefined) db.settings.referredUserSignupBonus = Number(referredUserSignupBonus);
+
+  const newVal = JSON.stringify({
+    enabled: db.settings.referralProgramEnabled,
+    base: db.settings.referralRewardPerUser,
+    comm: db.settings.referralCommissionPercent,
+    t10: db.settings.referralTier10Bonus,
+    t100: db.settings.referralTier100Bonus,
+    min: db.settings.referralMinRechargeAmount,
+    welcome: db.settings.referredUserSignupBonus
+  });
+
+  addAuditLog(
+    req.user!.id,
+    req.user!.name,
+    'REFERRAL_SETTINGS_UPDATE',
+    'settings:referral',
+    oldVal,
+    newVal,
+    reason || 'Referral program rule update',
     req.ip
   );
 

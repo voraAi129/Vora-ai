@@ -10,7 +10,8 @@ import {
   Shield,
   ArrowRight,
   KeyRound,
-  RefreshCw
+  RefreshCw,
+  Gift
 } from 'lucide-react';
 import { api } from '../services/api';
 import { sound } from '../services/audio';
@@ -34,6 +35,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
   const [regMobile, setRegMobile] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regReferralCode, setRegReferralCode] = useState('');
   const [showRegPass, setShowRegPass] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(true);
 
@@ -167,7 +169,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
         password: regPassword,
         confirmPassword: regConfirmPassword,
         otp: otpValue.trim(),
-        termsAccepted
+        termsAccepted,
+        referralCode: regReferralCode.trim() ? regReferralCode.trim().toUpperCase() : undefined
       });
 
       if (!res || !res.user || !res.token) {
@@ -466,6 +469,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
                   onChange={(e) => setRegConfirmPassword(e.target.value)}
                   className="w-full bg-slate-900/90 border border-slate-800 rounded-xl py-2.5 pl-11 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
                   required
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
+                  Referral Code (Optional)
+                </label>
+                <span className="text-[10px] text-amber-400 font-medium">Get ₹25 Welcome Bonus</span>
+              </div>
+              <div className="relative flex items-center">
+                <div className="absolute left-3.5 text-slate-400">
+                  <Gift className="w-4 h-4 text-amber-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. VORA8368"
+                  value={regReferralCode}
+                  onChange={(e) => setRegReferralCode(e.target.value.toUpperCase())}
+                  className="w-full bg-slate-900/90 border border-slate-800 rounded-xl py-2.5 pl-11 pr-4 text-sm font-mono uppercase text-amber-300 placeholder-slate-600 focus:outline-none focus:border-amber-400"
                 />
               </div>
             </div>

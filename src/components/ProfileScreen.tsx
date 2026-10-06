@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Trash2,
-  Lock
+  Lock,
+  Gift
 } from 'lucide-react';
 import { api } from '../services/api';
 import { sound } from '../services/audio';
@@ -170,6 +171,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
           {/* Quick Shortcuts */}
           <div className="space-y-1 rounded-2xl bg-slate-900/80 border border-slate-800 p-2">
+            <button
+              onClick={() => {
+                sound.playTap();
+                onNavigate('referral');
+              }}
+              className="w-full p-2.5 rounded-xl bg-purple-950/30 hover:bg-purple-900/40 border border-purple-500/30 flex items-center justify-between text-xs text-purple-200 transition-colors"
+            >
+              <div className="flex items-center space-x-2.5">
+                <Gift className="w-4 h-4 text-amber-400" />
+                <div className="text-left">
+                  <span className="font-bold text-white block">Refer & Earn Program</span>
+                  <span className="text-[10px] text-purple-300">Earn ₹50 + 1% recharge commission</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-purple-400" />
+            </button>
+
             <button
               onClick={() => {
                 sound.playTap();
