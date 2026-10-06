@@ -3119,7 +3119,7 @@ app.get('/api/admin/referral-stats', requireAdmin, (req: AuthenticatedRequest, r
   });
 });
 
-app.put('/api/admin/referral-settings', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+const handleUpdateReferralSettings = (req: AuthenticatedRequest, res: Response) => {
   const {
     referralProgramEnabled,
     referralRewardPerUser,
@@ -3172,7 +3172,10 @@ app.put('/api/admin/referral-settings', requireAdmin, (req: AuthenticatedRequest
 
   saveDb();
   res.json({ success: true, settings: db.settings });
-});
+};
+
+app.put('/api/admin/referral-settings', requireAdmin, handleUpdateReferralSettings);
+app.post('/api/admin/referral-settings', requireAdmin, handleUpdateReferralSettings);
 
 // Admin Audit Logs
 app.get('/api/admin/audit-logs', requireAdmin, (req: AuthenticatedRequest, res: Response) => {

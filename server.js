@@ -2285,7 +2285,7 @@ app.get("/api/admin/referral-stats", requireAdmin, (req, res) => {
     topReferrers: referrers
   });
 });
-app.put("/api/admin/referral-settings", requireAdmin, (req, res) => {
+const handleUpdateReferralSettings = (req, res) => {
   const {
     referralProgramEnabled,
     referralRewardPerUser,
@@ -2333,7 +2333,9 @@ app.put("/api/admin/referral-settings", requireAdmin, (req, res) => {
   );
   saveDb();
   res.json({ success: true, settings: db.settings });
-});
+};
+app.put("/api/admin/referral-settings", requireAdmin, handleUpdateReferralSettings);
+app.post("/api/admin/referral-settings", requireAdmin, handleUpdateReferralSettings);
 app.get("/api/admin/audit-logs", requireAdmin, (req, res) => {
   res.json({ auditLogs: db.auditLogs });
 });
