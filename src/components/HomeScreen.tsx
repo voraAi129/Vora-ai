@@ -38,6 +38,47 @@ interface HomeScreenProps {
 
 const QUICK_AMOUNTS = [100, 250, 500, 1000, 2000, 5000, 10000];
 
+// Rotating real-brand Google AdMob style banner ads
+const BANNER_ADS = [
+  { brand: 'Swiggy', text: 'Order food in 30 mins! 60% OFF your first order 🍕', color: '#FC8019', bg: 'from-orange-950/60 to-slate-950' },
+  { brand: 'Amazon', text: 'Great Indian Sale — Up to 80% OFF! Shop Now 🛒', color: '#FF9900', bg: 'from-yellow-950/60 to-slate-950' },
+  { brand: 'Flipkart', text: 'Big Billion Days — Best deals on Electronics 📱', color: '#2874F0', bg: 'from-blue-950/60 to-slate-950' },
+  { brand: 'Zepto', text: 'Groceries delivered in 10 minutes! ₹50 OFF 🛍️', color: '#8B5CF6', bg: 'from-purple-950/60 to-slate-950' },
+  { brand: 'Zomato', text: 'Order from top restaurants near you 🍱 Use ZOMATO50', color: '#E23744', bg: 'from-red-950/60 to-slate-950' },
+  { brand: 'Paytm', text: 'Pay bills & earn cashback! ₹25 bonus on first pay 💳', color: '#00B9F1', bg: 'from-cyan-950/60 to-slate-950' },
+];
+
+const BannerAd: React.FC = () => {
+  const [idx, setIdx] = useState(Math.floor(Math.random() * BANNER_ADS.length));
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % BANNER_ADS.length);
+        setVisible(true);
+      }, 350);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const ad = BANNER_ADS[idx];
+  return (
+    <div className={`p-2.5 rounded-xl bg-gradient-to-r ${ad.bg} border border-slate-800/80 flex items-center justify-between text-xs transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+      <div className="flex items-center space-x-2 flex-1 min-w-0">
+        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold shrink-0" style={{ background: ad.color + '25', color: ad.color }}>
+          AD
+        </span>
+        <span className="font-bold text-[10px] shrink-0" style={{ color: ad.color }}>{ad.brand}</span>
+        <span className="text-[10px] text-slate-300 truncate">{ad.text}</span>
+      </div>
+      <span className="text-[8px] text-slate-600 font-mono shrink-0 ml-1">Google</span>
+    </div>
+  );
+};
+
+
 export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatchAd }) => {
   const [lang, setLang] = useState(i18n.getLanguage());
   const [muted, setMuted] = useState(sound.getMuted());
@@ -912,17 +953,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onNavigate, onWatc
       </div>
 
       {/* ===================== ADMOB BANNER ADVERTISEMENT ===================== */}
-      <div className="p-3 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800/80 flex items-center justify-between text-xs">
-        <div className="flex items-center space-x-2">
-          <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-mono text-[9px] font-bold">
-            AdMob Banner
-          </span>
-          <span className="text-[11px] text-slate-300 font-medium truncate max-w-[200px]">
-            Fintech Security & Cloud Payouts 2026
-          </span>
-        </div>
-        <span className="text-[9px] text-slate-600 font-mono">ca-app-pub...6300978111</span>
-      </div>
+      <BannerAd />
+
 
       {/* ===================== FIRST RECHARGE REQUIRED MODAL ===================== */}
       {showRechargeRequiredModal && (

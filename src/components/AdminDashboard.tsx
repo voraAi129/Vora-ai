@@ -146,52 +146,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const results = await Promise.allSettled([
-        api.getAdminDashboard(),
+      // Load core dashboard first for instant display
+      const dashRes = await api.getAdminDashboard().catch((e) => { throw e; });
+      setStats(dashRes.stats);
+      setAlerts(dashRes.systemAlerts || []);
+      setLoading(false);
+
+      // Load rest in background (non-blocking)
+      const [wRes, setRes, logRes, tktRes, upiRes] = await Promise.allSettled([
         api.getAdminWithdrawals(),
-        api.getAdminRewardConfig(),
         api.getAdminSettings(),
         api.getAdminAuditLogs(),
         api.getAdminTickets(),
-        api.getAdminAdConfig(),
         api.getAdminUpiDeposits()
       ]);
 
-      const [dashRes, wRes, campRes, setRes, logRes, tktRes, adRes, upiRes] = results;
+      if (wRes.status === 'fulfilled') setWithdrawals(wRes.value.withdrawals || []);
+      if (setRes.status === 'fulfilled') setSettings(setRes.value.settings);
+      if (logRes.status === 'fulfilled') setAuditLogs(logRes.value.auditLogs || []);
+      if (tktRes.status === 'fulfilled') setAdminTickets(tktRes.value.tickets || []);
+      if (upiRes.status === 'fulfilled') setUpiDeposits(upiRes.value.deposits || []);
 
-      if (dashRes.status === 'fulfilled') {
-        setStats(dashRes.value.stats);
-        setAlerts(dashRes.value.systemAlerts || []);
-      }
-      if (wRes.status === 'fulfilled') {
-        setWithdrawals(wRes.value.withdrawals || []);
-      }
-      if (campRes.status === 'fulfilled') {
-        setCampaigns(campRes.value.campaigns || []);
-      }
-      if (setRes.status === 'fulfilled') {
-        setSettings(setRes.value.settings);
-      }
-      if (logRes.status === 'fulfilled') {
-        setAuditLogs(logRes.value.auditLogs || []);
-      }
-      if (tktRes.status === 'fulfilled') {
-        setAdminTickets(tktRes.value.tickets || []);
-      }
-      if (adRes.status === 'fulfilled' && adRes.value) {
-        setAdConfig(adRes.value);
-      }
-      if (upiRes && upiRes.status === 'fulfilled') {
-        setUpiDeposits(upiRes.value.deposits || []);
-      }
-
-      if (dashRes.status === 'rejected') {
-        throw dashRes.reason;
-      }
+      // Load ad config
+      api.getAdminAdConfig().then((adRes) => { if (adRes) setAdConfig(adRes); }).catch(() => {});
     } catch (err: any) {
-      setToastMsg({ text: err.message || 'Access restricted', type: 'error' });
-    } finally {
       setLoading(false);
+      setToastMsg({ text: err.message || 'Access restricted — check admin login', type: 'error' });
     }
   };
 
@@ -598,21 +578,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       {/* Navigation Pills */}
       <div className="flex space-x-1.5 overflow-x-auto py-2.5 scrollbar-none">
         {[
-          { id: 'overview', label: 'Dashboard' },
-          { id: 'users', label: 'Users' },
-          { id: 'withdrawals', label: 'Withdrawals' },
-          { id: 'ads', label: 'Ads & AdMob' },
-          { id: 'campaigns', label: 'Campaigns' },
-          { id: 'tickets', label: 'Support Tickets' },
-          { id: 'settings', label: 'Settings' },
-          { id: 'audit', label: 'Audit Logs' },
-          { id: 'testing', label: 'QA & Testing' }
+          { id: 'overview', label: '📊 Dashboard' },
+          { id: 'deposits', label: '💳 Deposits' },
+          { id: 'users', label: '👥 Users' },
+          { id: 'withdrawals', label: '💸 Withdrawals' },
+          { id: 'ads', label: '📺 Ads & AdMob' },
+          { id: 'campaigns', label: '🎯 Campaigns' },
+          { id: 'tickets', label: '🎫 Support' },
+          { id: 'settings', label: '⚙️ Settings' },
+          { id: 'audit', label: '📋 Audit Logs' },
+          { id: 'testing', label: '🧪 QA Testing' }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => {
               sound.playTap();
               setActiveTab(tab.id as any);
+              if (tab.id === 'users') loadUsers();
+              if (tab.id === 'deposits') {
+                api.getAdminUpiDeposits().then(r => setUpiDeposits(r.deposits || [])).catch(() => {});
+              }
             }}
             className={`py-1.5 px-3 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
               activeTab === tab.id
@@ -777,7 +762,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                   </div>
                   <p className="text-[11px] text-slate-400 mt-0.5">{u.mobile}</p>
                   <p className="text-[10px] font-mono text-emerald-400 mt-1">
-                    Balance: ₹{u.wallet?.availableBalance ?? 0}
+                    💰 Balance: ₹{(u.availableBalance ?? u.wallet?.availableBalance ?? 0).toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[9px] font-mono text-slate-500">
+                    Deposited: ₹{(u.totalDeposited ?? 0).toLocaleString('en-IN')} • Rewards: ₹{(u.totalRewards ?? 0).toLocaleString('en-IN')}
                   </p>
                 </div>
 
@@ -898,6 +886,184 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                   >
                     Commit Adjustment
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ================= TAB: DEPOSITS (UPI Verify/Reject) ================= */}
+      {activeTab === 'deposits' && (
+        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-white">💳 UPI Deposit Requests</h3>
+            <button
+              onClick={() => api.getAdminUpiDeposits().then(r => setUpiDeposits(r.deposits || [])).catch(() => {})}
+              className="py-1 px-2.5 rounded-lg bg-slate-800 text-xs text-slate-300 flex items-center space-x-1 hover:bg-slate-700"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          {/* Filter buttons */}
+          <div className="flex space-x-1 text-xs overflow-x-auto pb-1">
+            {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setUpiFilter(f)}
+                className={`py-1 px-2.5 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                  upiFilter === f
+                    ? 'bg-amber-400 text-slate-950'
+                    : 'bg-slate-900 border border-slate-800 text-slate-400'
+                }`}
+              >
+                {f} {f !== 'ALL' ? `(${upiDeposits.filter(d => d.status === f).length})` : `(${upiDeposits.length})`}
+              </button>
+            ))}
+          </div>
+
+          {/* Deposits list */}
+          <div className="space-y-2">
+            {upiDeposits.filter(d => upiFilter === 'ALL' || d.status === upiFilter).length === 0 ? (
+              <div className="text-center py-12 text-slate-500 text-xs">
+                No {upiFilter !== 'ALL' ? upiFilter.toLowerCase() : ''} deposit requests
+              </div>
+            ) : (
+              upiDeposits
+                .filter(d => upiFilter === 'ALL' || d.status === upiFilter)
+                .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+                .map((dep) => (
+                  <div key={dep.id} className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                    {/* Top row */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-lg font-black font-mono text-white">₹{dep.amount}</span>
+                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                          dep.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400' :
+                          dep.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-400' :
+                          'bg-amber-500/20 text-amber-400'
+                        }`}>{dep.status}</span>
+                      </div>
+                      <span className="text-[9px] text-slate-500 font-mono">
+                        {new Date(dep.submittedAt).toLocaleDateString('en-IN')} {new Date(dep.submittedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+
+                    {/* User info */}
+                    <div className="p-2 bg-slate-950 rounded-lg space-y-0.5 font-mono text-[10px]">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">User:</span>
+                        <span className="text-white font-bold">{dep.userName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Mobile:</span>
+                        <span className="text-slate-300">{dep.userMobile}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">UTR:</span>
+                        <span className="text-cyan-400 font-bold">{dep.utrNumber || '—'}</span>
+                      </div>
+                      {dep.upiId && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">UPI ID:</span>
+                          <span className="text-slate-300">{dep.upiId}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Screenshot */}
+                    {dep.screenshotUrl && (
+                      <button
+                        onClick={() => setSelectedScreenshotUrl(dep.screenshotUrl!)}
+                        className="w-full py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[10px] font-semibold hover:bg-blue-500/20"
+                      >
+                        👁 View Payment Screenshot
+                      </button>
+                    )}
+
+                    {/* Note */}
+                    {dep.note && (
+                      <p className="text-[10px] text-slate-400 italic">Note: {dep.note}</p>
+                    )}
+
+                    {/* Action buttons — only for PENDING */}
+                    {dep.status === 'PENDING' && (
+                      <div className="flex space-x-2 pt-1">
+                        <button
+                          disabled={isProcessingDeposit}
+                          onClick={() => handleApproveUpiDeposit(dep)}
+                          className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center space-x-1 disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>✅ Approve & Credit ₹{dep.amount}</span>
+                        </button>
+                        <button
+                          disabled={isProcessingDeposit}
+                          onClick={() => { setRejectingDeposit(dep); setRejectionReasonInput(''); }}
+                          className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center justify-center space-x-1 disabled:opacity-50"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>❌ Reject</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Rejection reason display */}
+                    {dep.status === 'REJECTED' && dep.rejectionReason && (
+                      <p className="text-[10px] text-rose-400">Reason: {dep.rejectionReason}</p>
+                    )}
+                  </div>
+                ))
+            )}
+          </div>
+
+          {/* Screenshot Modal */}
+          {selectedScreenshotUrl && (
+            <div
+              onClick={() => setSelectedScreenshotUrl(null)}
+              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <div className="relative max-w-sm w-full">
+                <button
+                  onClick={() => setSelectedScreenshotUrl(null)}
+                  className="absolute -top-8 right-0 text-white text-sm"
+                >✕ Close</button>
+                <img src={selectedScreenshotUrl} alt="Payment screenshot" className="w-full rounded-2xl border border-slate-700" />
+              </div>
+            </div>
+          )}
+
+          {/* Rejection Reason Modal */}
+          {rejectingDeposit && (
+            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-800 p-5 shadow-2xl space-y-3 text-xs">
+                <h3 className="text-sm font-bold text-white">Reject Deposit Request</h3>
+                <p className="text-slate-300">
+                  ₹{rejectingDeposit.amount} from <span className="font-bold text-white">{rejectingDeposit.userName}</span>
+                </p>
+                <div>
+                  <label className="text-[10px] text-slate-400 uppercase font-semibold block mb-1">Rejection Reason (optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. UTR not matching, payment not received..."
+                    value={rejectionReasonInput}
+                    onChange={(e) => setRejectionReasonInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs"
+                  />
+                </div>
+                <div className="flex space-x-2 pt-1">
+                  <button
+                    onClick={() => { setRejectingDeposit(null); setRejectionReasonInput(''); }}
+                    className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs"
+                  >Cancel</button>
+                  <button
+                    disabled={isProcessingDeposit}
+                    onClick={handleConfirmRejectUpiDeposit}
+                    className="flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs disabled:opacity-50"
+                  >Confirm Reject</button>
                 </div>
               </div>
             </div>
