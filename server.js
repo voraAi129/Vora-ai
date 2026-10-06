@@ -34,7 +34,7 @@ const defaultSettings = {
   minWithdrawalAmount: 200,
   maxWithdrawalAmount: 25e3,
   withdrawalFeePercentage: 0,
-  quickRechargeChips: [100, 250, 500, 1e3, 2e3, 5e3, 1e4],
+  quickRechargeChips: [500, 1e3, 2e3, 5e3, 1e4],
   termsAndConditions: "Welcome to VORA EARNING. This application is a compliant rewards and fintech loyalty platform. By accessing or using our services, you agree to comply with all applicable financial regulations, fair-play guidelines, and reward terms. No guaranteed returns or daily profits are promised. Rewards are subject to activity completion, verified transactions, and eligibility verification.",
   privacyPolicy: "Your privacy is paramount at VORA EARNING. We collect minimal necessary data (mobile number, transaction identifiers, device security tokens) strictly for authentication, fraud prevention, and ledger reconciliation. Banking information is masked in the UI and encrypted in transit.",
   refundPolicy: "Recharge payments verified on Razorpay that are not credited due to technical discrepancies are automatically reconciled or refunded to the original payment source within 5 to 7 banking days as per RBI guidelines.",

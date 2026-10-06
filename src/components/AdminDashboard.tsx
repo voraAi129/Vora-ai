@@ -167,7 +167,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       minWithdrawalAmount: 200,
       maxWithdrawalAmount: 25000,
       withdrawalFeePercentage: 0,
-      quickRechargeChips: [100, 250, 500, 1000, 2000, 5000, 10000],
+      quickRechargeChips: [500, 1000, 2000, 5000, 10000],
       termsAndConditions: 'Welcome to VORA EARNING. This application is a compliant rewards and fintech loyalty platform.',
       privacyPolicy: 'Your privacy is paramount at VORA EARNING.',
       refundPolicy: 'Recharge payments verified on Razorpay that are not credited are automatically reconciled.',
@@ -1976,6 +1976,64 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Quick Recharge Chips Manager */}
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+            <h4 className="font-bold text-white uppercase text-[10px]">Quick Recharge Chips (₹)</h4>
+            <p className="text-slate-500 text-[10px]">Recharge screen pe ye amounts as quick-select buttons dikhenge</p>
+
+            {/* Current chips as removable badges */}
+            <div className="flex flex-wrap gap-2">
+              {(settings.quickRechargeChips || []).sort((a: number, b: number) => a - b).map((chip: number) => (
+                <div key={chip} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                  <span>₹{chip.toLocaleString('en-IN')}</span>
+                  <button
+                    onClick={() => {
+                      const updated = (settings.quickRechargeChips || []).filter((c: number) => c !== chip);
+                      setSettings({ ...settings, quickRechargeChips: updated });
+                    }}
+                    className="ml-1 w-4 h-4 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40 flex items-center justify-center text-[10px] font-bold leading-none"
+                    title={`Remove ₹${chip}`}
+                  >✕</button>
+                </div>
+              ))}
+              {(settings.quickRechargeChips || []).length === 0 && (
+                <p className="text-slate-600 text-xs italic">Koi chip nahi — add karo niche se</p>
+              )}
+            </div>
+
+            {/* Add new chip input */}
+            <div className="flex gap-2">
+              <input
+                id="newChipInput"
+                type="number"
+                min="1"
+                placeholder="Amount likhein (e.g. 2000)"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono text-sm focus:border-emerald-500 outline-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const val = Number((e.target as HTMLInputElement).value);
+                    if (val > 0 && !(settings.quickRechargeChips || []).includes(val)) {
+                      setSettings({ ...settings, quickRechargeChips: [...(settings.quickRechargeChips || []), val] });
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  const input = document.getElementById('newChipInput') as HTMLInputElement;
+                  const val = Number(input?.value);
+                  if (val > 0 && !(settings.quickRechargeChips || []).includes(val)) {
+                    setSettings({ ...settings, quickRechargeChips: [...(settings.quickRechargeChips || []), val] });
+                    if (input) input.value = '';
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold transition-all active:scale-95"
+              >+ Add</button>
+            </div>
+            <p className="text-slate-600 text-[10px]">💡 Amount type karo aur Enter dabao ya "Add" button dabao. "Save Settings" se live ho jayega.</p>
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">

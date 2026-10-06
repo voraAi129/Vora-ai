@@ -182,7 +182,7 @@ class ApiService {
           minWithdrawalAmount: 200,
           maxWithdrawalAmount: 25000,
           withdrawalFeePercentage: 0,
-          quickRechargeChips: [100, 250, 500, 1000, 2000, 5000, 10000],
+          quickRechargeChips: [500, 1000, 2000, 5000, 10000],
           termsAndConditions: 'Terms and conditions for VORA EARNING.',
           privacyPolicy: 'Privacy policy for VORA EARNING.',
           refundPolicy: 'Refund policy for VORA EARNING.',

@@ -37,7 +37,7 @@ interface HomeScreenProps {
   onWatchAd: () => void;
 }
 
-const QUICK_AMOUNTS = [100, 250, 500, 1000, 2000, 5000, 10000];
+const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000];
 
 // Rotating Google AdMob Banner Ads (Real-Brand Dynamic AdMob Banners)
 const BANNER_ADS = [

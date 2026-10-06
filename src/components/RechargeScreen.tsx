@@ -27,7 +27,7 @@ interface RechargeScreenProps {
 
 export const RechargeScreen: React.FC<RechargeScreenProps> = ({ onBack, onSuccessDone }) => {
   const [amount, setAmount] = useState<string>('500');
-  const [chips, setChips] = useState<number[]>([100, 250, 500, 1000, 2000, 5000, 10000]);
+  const [chips, setChips] = useState<number[]>([500, 1000, 2000, 5000, 10000]);
   const [minRecharge, setMinRecharge] = useState<number>(100);
   const [maxRecharge, setMaxRecharge] = useState<number>(100000);
   const [upiId, setUpiId] = useState<string>('9266428368-i638-2@ibl');
