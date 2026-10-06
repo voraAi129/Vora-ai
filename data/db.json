@@ -32,8 +32,8 @@
       "id": "usr_admin_root",
       "name": "System Administrator",
       "mobile": "9266428368",
-      "passwordHash": "968127785df467cfb78239ce61955707c350b6c4ba1fa8848c85c5cdada3badcb18c920169a95358133c378f551bb54a76cb32caac1ee6f432f235b96e565ae4",
-      "salt": "57553e8621a3e8a8184e28132945a6b1",
+      "passwordHash": "2c1c49df2b9ca74cf1610893e375090e4aaf00b017652678b1dfeefc490e07353e5c023fcfa129940d3b9014831d5e0a9275422b2d9d30e021340ebe7c72ffbe",
+      "salt": "b4be118301f17cdfe3b4b9aedd5acb20",
       "role": "ADMIN",
       "status": "ACTIVE",
       "createdAt": "2026-10-05T06:46:20.994Z"

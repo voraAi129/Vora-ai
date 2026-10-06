@@ -68,10 +68,15 @@ export default function App() {
   }, []);
 
   // Check stored auth session and system settings
-  useEffect(() => {
+  const checkSettings = useCallback(() => {
     api.getSystemSettings().then((res) => {
-      if (res.settings) setSystemSettings(res.settings);
+      if (res && res.settings) setSystemSettings(res.settings);
     }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    checkSettings();
+    const interval = setInterval(checkSettings, 10000);
 
     if (api.getToken()) {
       api.getProfile().then((res) => {
@@ -92,7 +97,9 @@ export default function App() {
         }
       });
     }
-  }, []);
+
+    return () => clearInterval(interval);
+  }, [checkSettings]);
 
   // Back button handler
   const handleAndroidBack = useCallback(() => {
@@ -192,8 +199,8 @@ export default function App() {
             We are upgrading financial ledger pipelines for improved security. Please check back shortly.
           </p>
           <button
-            onClick={() => window.location.reload()}
-            className="py-2.5 px-6 rounded-xl bg-slate-800 text-xs font-semibold text-slate-200"
+            onClick={checkSettings}
+            className="py-2.5 px-6 rounded-xl bg-slate-800 text-xs font-semibold text-slate-200 active:scale-95 transition-transform"
           >
             Check Again
           </button>

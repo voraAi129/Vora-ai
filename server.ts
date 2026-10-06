@@ -17,6 +17,7 @@ const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'vora_razorpay_se
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'vora_webhook_secret_key';
 const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || 'OT3RwPxYdortDGgmseJ71k29vUACcIb5QXKW6ZfjEaFBN0zlhLNfM5Tv2IOLJSypjF9xBlYtm8KngZWb';
 const FAST2SMS_API_URL = 'https://www.fast2sms.com/dev/bulkV2';
+const TWO_FACTOR_API_KEY = process.env.TWO_FACTOR_API_KEY || process.env.TWOFACTOR_API_KEY || '55b98607-bd81-11f1-af74-0200cd936042';
 
 // Data directory
 const DATA_DIR = path.resolve(__dirname, 'data');
@@ -326,13 +327,13 @@ function loadDb() {
   }
 
   // Ensure default admin exists securely
-  const adminMobile = process.env.ADMIN_MOBILE || '9876543210';
-  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || 'AdminSecurePassword123!';
+  const adminMobile = process.env.ADMIN_MOBILE || '9266428368';
+  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || 'Prince@Admin@129';
   let admin = db.users.find(u => u.mobile === adminMobile);
   if (!admin) {
     const { hash, salt } = hashPassword(adminPassword);
     admin = {
-      id: 'usr_admin_root',
+      id: `usr_admin_${adminMobile}`,
       name: 'System Administrator',
       mobile: adminMobile,
       passwordHash: hash,
@@ -345,15 +346,21 @@ function loadDb() {
     if (!db.wallets[admin.id]) {
       db.wallets[admin.id] = {
         userId: admin.id,
-        availableBalance: 50000,
+        availableBalance: 100000,
         participatingBalance: 0,
         pendingBalance: 0,
-        totalDeposited: 50000,
+        totalDeposited: 100000,
         totalWithdrawn: 0,
         totalRewards: 0,
         updatedAt: new Date().toISOString()
       };
     }
+  } else {
+    // Sync admin password hash and role
+    const { hash, salt } = hashPassword(adminPassword);
+    admin.passwordHash = hash;
+    admin.salt = salt;
+    admin.role = 'ADMIN';
   }
 
   // Ensure demo verified user exists for instant zero-friction testing
@@ -604,6 +611,28 @@ function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunc
 
 app.use(authMiddleware);
 
+// Global Maintenance Mode Middleware for API routes
+app.use((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  // Allow static files, admin routes, system settings, and admin users
+  if (
+    !req.path.startsWith('/api/') ||
+    req.path.startsWith('/api/admin') ||
+    req.path === '/api/system/settings' ||
+    (req.user && req.user.role === 'ADMIN')
+  ) {
+    return next();
+  }
+
+  if (db.settings.maintenanceMode) {
+    return res.status(503).json({
+      error: 'VORA EARNING is currently under maintenance. Please try again later.',
+      maintenanceMode: true
+    });
+  }
+
+  next();
+});
+
 function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   if (!req.user) {
     return res.status(401).json({ error: 'Unauthorized: Authentication required' });
@@ -635,6 +664,22 @@ app.post('/api/auth/send-otp', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Valid 10-digit mobile number is required' });
   }
 
+  // If registering, check if already registered
+  if (purpose === 'register') {
+    const existing = db.users.find(u => u.mobile === mobile);
+    if (existing) {
+      return res.status(409).json({ error: 'This mobile number is already registered. Please login.' });
+    }
+  }
+
+  // If forgot password, check if registered
+  if (purpose === 'forgot_password') {
+    const existing = db.users.find(u => u.mobile === mobile);
+    if (!existing) {
+      return res.status(404).json({ error: 'This mobile number is not registered.' });
+    }
+  }
+
   const ip = req.ip || '127.0.0.1';
   if (!checkRateLimit(`otp_${mobile}_${ip}`, 5, 300000)) {
     return res.status(429).json({ error: 'Too many OTP requests. Please wait 5 minutes.' });
@@ -645,12 +690,37 @@ app.post('/api/auth/send-otp', async (req: Request, res: Response) => {
   db.otpStore[mobile] = {
     otp: generatedOtp,
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
-    attempts: 0
+    attempts: 0,
+    verified: false
   };
+
+  console.log(`[SERVER OTP GENERATED] Mobile: +91 ${mobile} | OTP: ${generatedOtp}`);
+
+  // Send OTP via 2Factor.in if key is configured, else fallback to Fast2SMS API
+  if (TWO_FACTOR_API_KEY) {
+    try {
+      const url = `https://2factor.in/API/V1/${TWO_FACTOR_API_KEY}/SMS/${mobile}/${generatedOtp}`;
+      const smsResponse = await fetch(url);
+      const smsResult = await smsResponse.json();
+      console.log(`[2FACTOR] OTP ${generatedOtp} sent to +91 ${mobile} | Response:`, smsResult);
+
+      if (smsResult.Status === 'Success') {
+        return res.json({
+          success: true,
+          message: `OTP sent successfully to +91 ${mobile.slice(0, 3)}****${mobile.slice(7)}`
+        });
+      } else {
+        const errorMsg = smsResult.Details || '2Factor gateway error';
+        console.warn('[2FACTOR] Failed to send OTP:', errorMsg, '- falling back to Fast2SMS');
+      }
+    } catch (err: any) {
+      console.warn('[2FACTOR] Exception, falling back to Fast2SMS:', err?.message || err);
+    }
+  }
 
   // Send OTP via Fast2SMS API
   try {
-    const smsResponse = await fetch(FAST2SMS_API_URL, {
+    let smsResponse = await fetch(FAST2SMS_API_URL, {
       method: 'POST',
       headers: {
         'authorization': FAST2SMS_API_KEY,
@@ -663,16 +733,41 @@ app.post('/api/auth/send-otp', async (req: Request, res: Response) => {
         flash: 0
       })
     });
-    const smsResult = await smsResponse.json();
-    console.log(`[FAST2SMS] OTP ${generatedOtp} sent to +91 ${mobile} | Response:`, smsResult);
+    let smsResult = await smsResponse.json();
+
+    // Fallback to quick route if OTP route returns verification error (status_code 996)
+    if (!smsResult.return && (smsResult.status_code === 996 || smsResult.status_code === 999)) {
+      console.warn('[FAST2SMS] OTP route returned status code', smsResult.status_code, '- trying route q fallback');
+      const fallbackResponse = await fetch(FAST2SMS_API_URL, {
+        method: 'POST',
+        headers: {
+          'authorization': FAST2SMS_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          route: 'q',
+          message: `Your VORA EARNING OTP is ${generatedOtp}. Valid for 10 minutes.`,
+          language: 'english',
+          flash: 0,
+          numbers: mobile
+        })
+      });
+      const fallbackResult = await fallbackResponse.json();
+      if (fallbackResult.return) {
+        smsResult = fallbackResult;
+      }
+    }
+
+    console.log(`[FAST2SMS] OTP ${generatedOtp} to +91 ${mobile} | Fast2SMS Response:`, smsResult);
 
     if (!smsResult.return) {
-      console.error('[FAST2SMS] Failed to send OTP:', smsResult.message);
-      return res.status(500).json({ error: 'Failed to send OTP. Please try again later.' });
+      const errMsg = Array.isArray(smsResult.message) ? smsResult.message.join(', ') : (smsResult.message || 'SMS provider error');
+      console.error('[FAST2SMS] Failed to send OTP:', errMsg);
+      return res.status(400).json({ error: `Fast2SMS Gateway Error: ${errMsg}` });
     }
-  } catch (smsErr) {
+  } catch (smsErr: any) {
     console.error('[FAST2SMS] Error sending OTP:', smsErr);
-    return res.status(500).json({ error: 'SMS service temporarily unavailable. Please try again.' });
+    return res.status(500).json({ error: 'SMS gateway unavailable. Please try again later.' });
   }
 
   res.json({
@@ -708,8 +803,8 @@ app.post('/api/auth/verify-otp', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid OTP. Please check and try again.' });
   }
 
-  // OTP verified
-  delete db.otpStore[mobile];
+  // Mark OTP verified
+  record.verified = true;
   res.json({ success: true, message: 'OTP verified successfully' });
 });
 
@@ -735,8 +830,23 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
 
   const existing = db.users.find(u => u.mobile === mobile);
   if (existing) {
-    return res.status(409).json({ error: 'An account with this mobile number already exists' });
+    return res.status(409).json({ error: 'This mobile number is already registered. Please login.' });
   }
+
+  // Verify OTP
+  const otpRecord = db.otpStore[mobile];
+  if (!otpRecord) {
+    return res.status(400).json({ error: 'OTP verification required. Please request an OTP first.' });
+  }
+  if (Date.now() > otpRecord.expiresAt) {
+    delete db.otpStore[mobile];
+    return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+  }
+  if (!otpRecord.verified && otpRecord.otp !== otp) {
+    return res.status(400).json({ error: 'Invalid or unverified OTP. Please check and try again.' });
+  }
+
+  delete db.otpStore[mobile];
 
   // Hash password
   const { hash, salt } = hashPassword(password);

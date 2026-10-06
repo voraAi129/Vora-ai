@@ -75,20 +75,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
     try {
       setLoading(true);
       const res = await api.login(loginMobile.trim(), loginPassword);
-      const isMobAdmin = loginMobile.trim() === '9876543210' || loginMobile.trim() === '9999999999' || loginPassword.toLowerCase().includes('admin');
-      const safeUser: User = (res && res.user) ? {
-        ...res.user,
-        role: res.user.role || (isMobAdmin ? 'ADMIN' : 'USER')
-      } : {
-        id: isMobAdmin ? 'usr_admin_root' : `usr_${loginMobile.trim()}`,
-        name: isMobAdmin ? 'System Administrator' : 'Vora User',
-        mobile: loginMobile.trim(),
-        role: isMobAdmin ? 'ADMIN' : 'USER',
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString()
-      };
+      if (!res || !res.user || !res.token) {
+        throw new Error('Invalid mobile number or password');
+      }
       sound.playSuccess();
-      onAuthSuccess(safeUser, res?.token || 'token_demo');
+      onAuthSuccess(res.user, res.token);
     } catch (err: any) {
       sound.playError();
       setError(err.message || 'Login failed. Please check your credentials.');
@@ -179,20 +170,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuthSuccess, onOpenLegal
         termsAccepted
       });
 
-      const safeUser: User = (res && res.user) ? {
-        ...res.user,
-        role: res.user.role || 'USER'
-      } : {
-        id: `usr_${regMobile.trim()}`,
-        name: regName.trim() || 'New User',
-        mobile: regMobile.trim(),
-        role: 'USER',
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString()
-      };
+      if (!res || !res.user || !res.token) {
+        throw new Error('Registration failed. Please try again.');
+      }
 
       sound.playSuccess();
-      onAuthSuccess(safeUser, res?.token || 'token_demo');
+      onAuthSuccess(res.user, res.token);
     } catch (err: any) {
       sound.playError();
       setError(err.message || 'OTP verification failed');

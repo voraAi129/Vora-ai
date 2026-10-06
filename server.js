@@ -12,6 +12,9 @@ const JWT_SECRET = process.env.JWT_SECRET || "vora_earning_fintech_production_se
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || "rzp_test_voraEarning2026";
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "vora_razorpay_secret_key_prod";
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "vora_webhook_secret_key";
+const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || "OT3RwPxYdortDGgmseJ71k29vUACcIb5QXKW6ZfjEaFBN0zlhLNfM5Tv2IOLJSypjF9xBlYtm8KngZWb";
+const FAST2SMS_API_URL = "https://www.fast2sms.com/dev/bulkV2";
+const TWO_FACTOR_API_KEY = process.env.TWO_FACTOR_API_KEY || process.env.TWOFACTOR_API_KEY || "55b98607-bd81-11f1-af74-0200cd936042";
 const DATA_DIR = path.resolve(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 const BACKUP_FILE = path.join(DATA_DIR, "backup.json");
@@ -90,13 +93,13 @@ function loadDb() {
   } catch (err) {
     console.error("Error loading DB, creating fresh state:", err);
   }
-  const adminMobile = process.env.ADMIN_MOBILE || "9876543210";
-  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || "AdminSecurePassword123!";
+  const adminMobile = process.env.ADMIN_MOBILE || "9266428368";
+  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || "Prince@Admin@129";
   let admin = db.users.find((u) => u.mobile === adminMobile);
   if (!admin) {
     const { hash, salt } = hashPassword(adminPassword);
     admin = {
-      id: "usr_admin_root",
+      id: `usr_admin_${adminMobile}`,
       name: "System Administrator",
       mobile: adminMobile,
       passwordHash: hash,
@@ -109,15 +112,20 @@ function loadDb() {
     if (!db.wallets[admin.id]) {
       db.wallets[admin.id] = {
         userId: admin.id,
-        availableBalance: 5e4,
+        availableBalance: 1e5,
         participatingBalance: 0,
         pendingBalance: 0,
-        totalDeposited: 5e4,
+        totalDeposited: 1e5,
         totalWithdrawn: 0,
         totalRewards: 0,
         updatedAt: (/* @__PURE__ */ new Date()).toISOString()
       };
     }
+  } else {
+    const { hash, salt } = hashPassword(adminPassword);
+    admin.passwordHash = hash;
+    admin.salt = salt;
+    admin.role = "ADMIN";
   }
   const demoMobile = "9999988888";
   let demoUser = db.users.find((u) => u.mobile === demoMobile);
@@ -320,6 +328,18 @@ function authMiddleware(req, res, next) {
   next();
 }
 app.use(authMiddleware);
+app.use((req, res, next) => {
+  if (!req.path.startsWith("/api/") || req.path.startsWith("/api/admin") || req.path === "/api/system/settings" || req.user && req.user.role === "ADMIN") {
+    return next();
+  }
+  if (db.settings.maintenanceMode) {
+    return res.status(503).json({
+      error: "VORA EARNING is currently under maintenance. Please try again later.",
+      maintenanceMode: true
+    });
+  }
+  next();
+});
 function requireAuth(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized: Authentication required" });
@@ -338,10 +358,22 @@ function requireAdmin(req, res, next) {
   }
   next();
 }
-app.post("/api/auth/send-otp", (req, res) => {
+app.post("/api/auth/send-otp", async (req, res) => {
   const { mobile, purpose } = req.body;
   if (!mobile || !/^\d{10}$/.test(mobile)) {
     return res.status(400).json({ error: "Valid 10-digit mobile number is required" });
+  }
+  if (purpose === "register") {
+    const existing = db.users.find((u) => u.mobile === mobile);
+    if (existing) {
+      return res.status(409).json({ error: "This mobile number is already registered. Please login." });
+    }
+  }
+  if (purpose === "forgot_password") {
+    const existing = db.users.find((u) => u.mobile === mobile);
+    if (!existing) {
+      return res.status(404).json({ error: "This mobile number is not registered." });
+    }
   }
   const ip = req.ip || "127.0.0.1";
   if (!checkRateLimit(`otp_${mobile}_${ip}`, 5, 3e5)) {
@@ -352,14 +384,78 @@ app.post("/api/auth/send-otp", (req, res) => {
     otp: generatedOtp,
     expiresAt: Date.now() + 10 * 60 * 1e3,
     // 10 minutes
-    attempts: 0
+    attempts: 0,
+    verified: false
   };
-  console.log(`[OTP GATEWAY] Sent real verification code ${generatedOtp} to +91 ${mobile}`);
+  console.log(`[SERVER OTP GENERATED] Mobile: +91 ${mobile} | OTP: ${generatedOtp}`);
+  if (TWO_FACTOR_API_KEY) {
+    try {
+      const url = `https://2factor.in/API/V1/${TWO_FACTOR_API_KEY}/SMS/${mobile}/${generatedOtp}`;
+      const smsResponse = await fetch(url);
+      const smsResult = await smsResponse.json();
+      console.log(`[2FACTOR] OTP ${generatedOtp} sent to +91 ${mobile} | Response:`, smsResult);
+      if (smsResult.Status === "Success") {
+        return res.json({
+          success: true,
+          message: `OTP sent successfully to +91 ${mobile.slice(0, 3)}****${mobile.slice(7)}`
+        });
+      } else {
+        const errorMsg = smsResult.Details || "2Factor gateway error";
+        console.warn("[2FACTOR] Failed to send OTP:", errorMsg, "- falling back to Fast2SMS");
+      }
+    } catch (err) {
+      console.warn("[2FACTOR] Exception, falling back to Fast2SMS:", err?.message || err);
+    }
+  }
+  try {
+    let smsResponse = await fetch(FAST2SMS_API_URL, {
+      method: "POST",
+      headers: {
+        "authorization": FAST2SMS_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        route: "otp",
+        variables_values: generatedOtp,
+        numbers: mobile,
+        flash: 0
+      })
+    });
+    let smsResult = await smsResponse.json();
+    if (!smsResult.return && (smsResult.status_code === 996 || smsResult.status_code === 999)) {
+      console.warn("[FAST2SMS] OTP route returned status code", smsResult.status_code, "- trying route q fallback");
+      const fallbackResponse = await fetch(FAST2SMS_API_URL, {
+        method: "POST",
+        headers: {
+          "authorization": FAST2SMS_API_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          route: "q",
+          message: `Your VORA EARNING OTP is ${generatedOtp}. Valid for 10 minutes.`,
+          language: "english",
+          flash: 0,
+          numbers: mobile
+        })
+      });
+      const fallbackResult = await fallbackResponse.json();
+      if (fallbackResult.return) {
+        smsResult = fallbackResult;
+      }
+    }
+    console.log(`[FAST2SMS] OTP ${generatedOtp} to +91 ${mobile} | Fast2SMS Response:`, smsResult);
+    if (!smsResult.return) {
+      const errMsg = Array.isArray(smsResult.message) ? smsResult.message.join(", ") : smsResult.message || "SMS provider error";
+      console.error("[FAST2SMS] Failed to send OTP:", errMsg);
+      return res.status(400).json({ error: `Fast2SMS Gateway Error: ${errMsg}` });
+    }
+  } catch (smsErr) {
+    console.error("[FAST2SMS] Error sending OTP:", smsErr);
+    return res.status(500).json({ error: "SMS gateway unavailable. Please try again later." });
+  }
   res.json({
     success: true,
-    message: `OTP sent successfully to +91 ${mobile.slice(0, 3)}****${mobile.slice(7)}`,
-    demoOtpHint: generatedOtp
-    // Shows the actual generated OTP on UI so user can enter it directly
+    message: `OTP sent successfully to +91 ${mobile.slice(0, 3)}****${mobile.slice(7)}`
   });
 });
 app.post("/api/auth/verify-otp", (req, res) => {
@@ -383,7 +479,7 @@ app.post("/api/auth/verify-otp", (req, res) => {
   if (record.otp !== otp) {
     return res.status(400).json({ error: "Invalid OTP. Please check and try again." });
   }
-  delete db.otpStore[mobile];
+  record.verified = true;
   res.json({ success: true, message: "OTP verified successfully" });
 });
 app.post("/api/auth/register", (req, res) => {
@@ -405,8 +501,20 @@ app.post("/api/auth/register", (req, res) => {
   }
   const existing = db.users.find((u) => u.mobile === mobile);
   if (existing) {
-    return res.status(409).json({ error: "An account with this mobile number already exists" });
+    return res.status(409).json({ error: "This mobile number is already registered. Please login." });
   }
+  const otpRecord = db.otpStore[mobile];
+  if (!otpRecord) {
+    return res.status(400).json({ error: "OTP verification required. Please request an OTP first." });
+  }
+  if (Date.now() > otpRecord.expiresAt) {
+    delete db.otpStore[mobile];
+    return res.status(400).json({ error: "OTP has expired. Please request a new one." });
+  }
+  if (!otpRecord.verified && otpRecord.otp !== otp) {
+    return res.status(400).json({ error: "Invalid or unverified OTP. Please check and try again." });
+  }
+  delete db.otpStore[mobile];
   const { hash, salt } = hashPassword(password);
   const newUser = {
     id: `usr_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`,
@@ -635,7 +743,7 @@ app.get("/api/transactions", requireAuth, (req, res) => {
     transactions: filtered
   });
 });
-app.post("/api/payment/create-order", requireAuth, (req, res) => {
+app.post("/api/payment/create-order", requireAuth, async (req, res) => {
   const { amount } = req.body;
   const numAmount = Number(amount);
   if (isNaN(numAmount) || numAmount <= 0) {
@@ -647,28 +755,58 @@ app.post("/api/payment/create-order", requireAuth, (req, res) => {
       error: `Recharge amount must be between \u20B9${minRechargeAmount} and \u20B9${maxRechargeAmount}`
     });
   }
-  const orderId = `order_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
-  const order = {
-    id: orderId,
-    userId: req.user.id,
-    amount: numAmount,
-    currency: "INR",
-    status: "INITIATED",
-    createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-  db.rechargeOrders.push(order);
-  saveDb();
-  res.json({
-    orderId: order.id,
-    amount: order.amount,
-    currency: order.currency,
-    keyId: RAZORPAY_KEY_ID,
-    user: {
-      name: req.user.name,
-      mobile: req.user.mobile
+  try {
+    const razorpayAuth = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString("base64");
+    const rzpResponse = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${razorpayAuth}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        amount: numAmount * 100,
+        // Razorpay expects amount in paise
+        currency: "INR",
+        receipt: `rcpt_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`,
+        notes: {
+          userId: req.user.id,
+          userName: req.user.name,
+          purpose: "wallet_recharge"
+        }
+      })
+    });
+    const rzpOrder = await rzpResponse.json();
+    if (!rzpResponse.ok || rzpOrder.error) {
+      console.error("[RAZORPAY] Order creation failed:", rzpOrder);
+      return res.status(500).json({ error: "Payment gateway error. Please try again." });
     }
-  });
+    console.log(`[RAZORPAY] Order created: ${rzpOrder.id} for \u20B9${numAmount}`);
+    const order = {
+      id: rzpOrder.id,
+      // Real Razorpay order_id like order_xxxxx
+      userId: req.user.id,
+      amount: numAmount,
+      currency: "INR",
+      status: "INITIATED",
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    db.rechargeOrders.push(order);
+    saveDb();
+    res.json({
+      orderId: rzpOrder.id,
+      amount: numAmount,
+      currency: "INR",
+      keyId: RAZORPAY_KEY_ID,
+      user: {
+        name: req.user.name,
+        mobile: req.user.mobile
+      }
+    });
+  } catch (err) {
+    console.error("[RAZORPAY] Order creation error:", err);
+    return res.status(500).json({ error: "Failed to create payment order. Please try again." });
+  }
 });
 app.post("/api/payment/verify", requireAuth, (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature, statusOverride } = req.body;
@@ -709,7 +847,7 @@ app.post("/api/payment/verify", requireAuth, (req, res) => {
   const hmac = crypto.createHmac("sha256", RAZORPAY_KEY_SECRET);
   hmac.update(`${order.id}|${paymentId}`);
   const expectedSignature = hmac.digest("hex");
-  const isSignatureValid = razorpay_signature ? razorpay_signature === expectedSignature || razorpay_signature.length >= 10 : true;
+  const isSignatureValid = razorpay_signature ? razorpay_signature === expectedSignature : false;
   if (!isSignatureValid) {
     order.status = "FAILED";
     order.updatedAt = (/* @__PURE__ */ new Date()).toISOString();

@@ -109,54 +109,9 @@ class ApiService {
 
     const cleanEndpoint = endpoint.split('?')[0];
 
-    // 1. Auth Login
-    if (cleanEndpoint === '/api/auth/login') {
-      const mobile = bodyData.mobile || '';
-      const password = bodyData.password || '';
-      const isAdmin = mobile === '9876543210' || mobile === '9999999999' || password.toLowerCase().includes('admin');
-      
-      const user: User = {
-        id: isAdmin ? 'usr_admin_root' : `usr_${mobile || 'demo'}`,
-        name: isAdmin ? 'System Administrator' : 'Vora User',
-        mobile: mobile || '9876543210',
-        role: isAdmin ? 'ADMIN' : 'USER',
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString()
-      };
-      const token = `token_demo_${user.id}_${Date.now()}`;
-      this.setToken(token);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('vora_offline_user', JSON.stringify(user));
-      }
-      return { success: true, token, user } as unknown as T;
-    }
-
-    // 2. Send OTP
-    if (cleanEndpoint === '/api/auth/send-otp') {
-      return { success: true, message: 'OTP sent successfully' } as unknown as T;
-    }
-
-    // 3. Verify OTP
-    if (cleanEndpoint === '/api/auth/verify-otp') {
-      return { success: true, message: 'OTP verified successfully' } as unknown as T;
-    }
-
-    // 4. Register
-    if (cleanEndpoint === '/api/auth/register') {
-      const user: User = {
-        id: `usr_${bodyData.mobile || Date.now()}`,
-        name: bodyData.name || 'New User',
-        mobile: bodyData.mobile || '',
-        role: 'USER',
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString()
-      };
-      const token = `token_demo_${user.id}_${Date.now()}`;
-      this.setToken(token);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('vora_offline_user', JSON.stringify(user));
-      }
-      return { success: true, token, user } as unknown as T;
+    // Auth routes MUST NOT be faked offline - must throw error to trigger real validation feedback
+    if (cleanEndpoint.startsWith('/api/auth/')) {
+      throw new Error('Authentication requires active connection to server');
     }
 
     // 5. User Profile
