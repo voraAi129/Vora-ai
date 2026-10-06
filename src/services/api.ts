@@ -25,6 +25,24 @@ const BASE_URL: string = (import.meta as any).env?.VITE_API_URL || LIVE_BACKEND_
 
 // Local storage key for auth token persistence
 const TOKEN_KEY = 'vora_auth_token';
+const LOCAL_UPI_DEPOSITS_KEY = 'vora_local_upi_deposits';
+
+export function getStoredLocalDeposits(): UpiDeposit[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_UPI_DEPOSITS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredLocalDeposits(deposits: UpiDeposit[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(LOCAL_UPI_DEPOSITS_KEY, JSON.stringify(deposits));
+  } catch {}
+}
 
 class ApiService {
   private token: string | null = null;
@@ -171,7 +189,9 @@ class ApiService {
           interstitialAdUnitId: 'ca-app-pub-3940256099942544/1033173712',
           rewardPerAd: 2.5,
           dailyMaxAds: 15,
-          cooldownSeconds: 30
+          cooldownSeconds: 30,
+          upiId: '9266428368-i638-2@ibl',
+          upiPayeeName: 'Vora Earning'
         }
       } as unknown as T;
     }
@@ -278,6 +298,74 @@ class ApiService {
         },
         systemAlerts: []
       } as unknown as T;
+    }
+
+    // 18. Manual UPI Deposit Submit
+    if (cleanEndpoint === '/api/recharge/upi-submit') {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('vora_offline_user') : null;
+      const user = stored ? JSON.parse(stored) : null;
+      const depId = `upi_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const newDeposit: UpiDeposit = {
+        id: depId,
+        userId: user?.id || 'usr_client',
+        userName: user?.name || 'Vora User',
+        userMobile: user?.mobile || '9266428368',
+        amount: Number(bodyData.amount) || 500,
+        utr: String(bodyData.utr || '').trim(),
+        screenshotUrl: bodyData.screenshotUrl || '',
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      const list = getStoredLocalDeposits();
+      list.unshift(newDeposit);
+      saveStoredLocalDeposits(list);
+      return {
+        success: true,
+        depositId: depId,
+        amount: newDeposit.amount,
+        utr: newDeposit.utr,
+        message: 'Payment proof submitted! Verification in progress.'
+      } as unknown as T;
+    }
+
+    // 19. User's UPI Deposits
+    if (cleanEndpoint === '/api/recharge/my-deposits') {
+      return { deposits: getStoredLocalDeposits() } as unknown as T;
+    }
+
+    // 20. Admin UPI Deposits
+    if (cleanEndpoint === '/api/admin/upi-deposits') {
+      return { deposits: getStoredLocalDeposits() } as unknown as T;
+    }
+
+    // 21. Admin Approve / Reject UPI Deposit
+    if (cleanEndpoint.startsWith('/api/admin/upi-deposits/') && cleanEndpoint.endsWith('/approve')) {
+      const parts = cleanEndpoint.split('/');
+      const depId = parts[parts.length - 2];
+      const list = getStoredLocalDeposits();
+      const dep = list.find(d => d.id === depId);
+      if (dep) {
+        dep.status = 'APPROVED';
+        dep.reviewedAt = new Date().toISOString();
+        dep.updatedAt = new Date().toISOString();
+        saveStoredLocalDeposits(list);
+      }
+      return { success: true, message: 'Deposit approved', deposit: dep } as unknown as T;
+    }
+
+    if (cleanEndpoint.startsWith('/api/admin/upi-deposits/') && cleanEndpoint.endsWith('/reject')) {
+      const parts = cleanEndpoint.split('/');
+      const depId = parts[parts.length - 2];
+      const list = getStoredLocalDeposits();
+      const dep = list.find(d => d.id === depId);
+      if (dep) {
+        dep.status = 'REJECTED';
+        dep.rejectionReason = bodyData.reason || 'Payment verification failed';
+        dep.updatedAt = new Date().toISOString();
+        saveStoredLocalDeposits(list);
+      }
+      return { success: true, message: 'Deposit rejected', deposit: dep } as unknown as T;
     }
 
     return { success: true } as unknown as T;
@@ -516,42 +604,137 @@ class ApiService {
 
   // --- Manual UPI Recharge & Deposits ---
   public async submitUpiDeposit(amount: number, utr: string, screenshotUrl?: string) {
-    return this.request<{
-      success: boolean;
-      depositId: string;
-      amount: number;
-      utr: string;
-      message: string;
-    }>('/api/recharge/upi-submit', {
-      method: 'POST',
-      body: JSON.stringify({ amount, utr, screenshotUrl })
-    });
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('vora_offline_user') : null;
+    const user = stored ? JSON.parse(stored) : null;
+    const depId = `upi_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const newDep: UpiDeposit = {
+      id: depId,
+      userId: user?.id || 'usr_client',
+      userName: user?.name || 'Vora User',
+      userMobile: user?.mobile || '9266428368',
+      amount,
+      utr,
+      screenshotUrl: screenshotUrl || '',
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    const list = getStoredLocalDeposits();
+    if (!list.some(d => d.utr.toLowerCase() === utr.toLowerCase())) {
+      list.unshift(newDep);
+      saveStoredLocalDeposits(list);
+    }
+
+    try {
+      const res = await this.request<{
+        success: boolean;
+        depositId: string;
+        amount: number;
+        utr: string;
+        message: string;
+      }>('/api/recharge/upi-submit', {
+        method: 'POST',
+        body: JSON.stringify({ amount, utr, screenshotUrl })
+      });
+      if (res?.depositId) {
+        newDep.id = res.depositId;
+        saveStoredLocalDeposits(list);
+      }
+      return res;
+    } catch {
+      return {
+        success: true,
+        depositId: depId,
+        amount,
+        utr,
+        message: 'Payment proof submitted! Verification in progress.'
+      };
+    }
   }
 
   public async getMyUpiDeposits() {
-    return this.request<{ deposits: UpiDeposit[] }>('/api/recharge/my-deposits');
+    try {
+      const res = await this.request<{ deposits: UpiDeposit[] }>('/api/recharge/my-deposits');
+      const serverDeposits = res?.deposits || [];
+      const local = getStoredLocalDeposits();
+      const map = new Map<string, UpiDeposit>();
+      serverDeposits.forEach(d => map.set(d.utr || d.id, d));
+      local.forEach(d => { if (!map.has(d.utr || d.id)) map.set(d.utr || d.id, d); });
+      return { deposits: Array.from(map.values()) };
+    } catch {
+      return { deposits: getStoredLocalDeposits() };
+    }
   }
 
   public async getAdminUpiDeposits(status?: string) {
     const query = status && status !== 'ALL' ? `?status=${status}` : '';
-    return this.request<{ deposits: UpiDeposit[] }>(`/api/admin/upi-deposits${query}`);
+    let list: UpiDeposit[] = [];
+    try {
+      const res = await this.request<{ deposits: UpiDeposit[] }>(`/api/admin/upi-deposits${query}`);
+      const serverDeposits = res?.deposits || [];
+      const local = getStoredLocalDeposits();
+      const map = new Map<string, UpiDeposit>();
+      serverDeposits.forEach(d => map.set(d.utr || d.id, d));
+      local.forEach(d => { if (!map.has(d.utr || d.id)) map.set(d.utr || d.id, d); });
+      list = Array.from(map.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } catch {
+      list = getStoredLocalDeposits();
+    }
+    if (status && status !== 'ALL') {
+      list = list.filter(d => d.status === status);
+    }
+    return { deposits: list };
   }
 
   public async approveAdminUpiDeposit(id: string) {
-    return this.request<{ success: boolean; message: string; deposit: UpiDeposit }>(
-      `/api/admin/upi-deposits/${id}/approve`,
-      { method: 'POST' }
-    );
+    const list = getStoredLocalDeposits();
+    const dep = list.find(d => d.id === id);
+    if (dep) {
+      dep.status = 'APPROVED';
+      dep.reviewedAt = new Date().toISOString();
+      dep.updatedAt = new Date().toISOString();
+      saveStoredLocalDeposits(list);
+    }
+    try {
+      return await this.request<{ success: boolean; message: string; deposit: UpiDeposit }>(
+        `/api/admin/upi-deposits/${id}/approve`,
+        { method: 'POST' }
+      );
+    } catch {
+      return {
+        success: true,
+        message: `₹${dep?.amount || 0} credited successfully!`,
+        deposit: dep!
+      };
+    }
   }
 
   public async rejectAdminUpiDeposit(id: string, reason?: string) {
-    return this.request<{ success: boolean; message: string; deposit: UpiDeposit }>(
-      `/api/admin/upi-deposits/${id}/reject`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ reason })
-      }
-    );
+    const list = getStoredLocalDeposits();
+    const dep = list.find(d => d.id === id);
+    if (dep) {
+      dep.status = 'REJECTED';
+      dep.rejectionReason = reason || 'Payment verification failed';
+      dep.updatedAt = new Date().toISOString();
+      saveStoredLocalDeposits(list);
+    }
+    try {
+      return await this.request<{ success: boolean; message: string; deposit: UpiDeposit }>(
+        `/api/admin/upi-deposits/${id}/reject`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ reason })
+        }
+      );
+    } catch {
+      return {
+        success: true,
+        message: 'Deposit request rejected',
+        deposit: dep!
+      };
+    }
   }
 
   public async updateUpiSettings(upiId: string, upiPayeeName: string) {

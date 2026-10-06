@@ -41,6 +41,7 @@ jobs:
           cd android
           sed -i 's/\r$//' gradlew
           chmod +x gradlew
+          sed -i '/org.gradle.java.home/d' gradle.properties || true
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
