@@ -19,10 +19,17 @@ const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || 'OT3RwPxYdortDGgmseJ71k
 const FAST2SMS_API_URL = 'https://www.fast2sms.com/dev/bulkV2';
 const TWO_FACTOR_API_KEY = process.env.TWO_FACTOR_API_KEY || process.env.TWOFACTOR_API_KEY || '55b98607-bd81-11f1-af74-0200cd936042';
 
-// Data directory
-const DATA_DIR = path.resolve(__dirname, 'data');
+// Data directory — supports Railway persistent volume via env var
+// Priority: RAILWAY_VOLUME_MOUNT_PATH > /tmp (Railway) > local ./data (dev)
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'vora-data')
+  : process.env.RAILWAY_ENVIRONMENT
+    ? '/tmp/vora-data'
+    : path.resolve(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'backup.json');
+
+console.log(`[DB] Using data directory: ${DATA_DIR}`);
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -477,6 +484,16 @@ function loadDb() {
 }
 
 loadDb();
+
+// Auto-save every 5 minutes to prevent data loss on Railway ephemeral filesystem
+setInterval(() => {
+  try {
+    saveDb();
+    console.log(`[DB] Auto-saved at ${new Date().toISOString()}`);
+  } catch (err) {
+    console.error('[DB] Auto-save failed:', err);
+  }
+}, 5 * 60 * 1000);
 
 // Wallet Helpers
 function getWallet(userId: string): WalletRecord {
