@@ -9,4 +9,15 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AdMobPlugin.class);
         super.onCreate(savedInstanceState);
     }
+
+    @Override
+    public void onBackPressed() {
+        runOnUiThread(() -> {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().eval("if (window.handleAndroidHardwareBack) { window.handleAndroidHardwareBack(); } else { window.dispatchEvent(new CustomEvent('backbutton')); }", null);
+            } else {
+                super.onBackPressed();
+            }
+        });
+    }
 }

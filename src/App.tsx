@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { App as CapacitorApp } from '@capacitor/app';
 import { api } from './services/api';
 import { sound } from './services/audio';
 import { User, AppSettings } from './types';
@@ -137,14 +136,8 @@ export default function App() {
 
   // Register Android Hardware Back Button listener
   useEffect(() => {
-    let backListener: any = null;
-    try {
-      CapacitorApp.addListener('backButton', () => {
-        handleAndroidBack();
-      }).then((listener) => {
-        backListener = listener;
-      }).catch(() => {});
-    } catch {}
+    // Bind global hardware back handler called by MainActivity.java
+    (window as any).handleAndroidHardwareBack = handleAndroidBack;
 
     const handlePopState = (e: PopStateEvent) => {
       e.preventDefault();
@@ -153,7 +146,7 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
 
     return () => {
-      if (backListener?.remove) backListener.remove();
+      delete (window as any).handleAndroidHardwareBack;
       window.removeEventListener('popstate', handlePopState);
     };
   }, [handleAndroidBack]);
@@ -336,10 +329,14 @@ export default function App() {
           onConfirm={() => {
             setIsExitConfirmOpen(false);
             try {
-              CapacitorApp.exitApp();
-            } catch {
+              (window as any).Capacitor?.registerPlugin?.('AdMobNative')?.exitApp?.();
+            } catch {}
+            try {
+              (window as any).navigator?.app?.exitApp?.();
+            } catch {}
+            try {
               window.close();
-            }
+            } catch {}
           }}
           onCancel={() => setIsExitConfirmOpen(false)}
         />

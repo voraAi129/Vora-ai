@@ -141,4 +141,17 @@ public class AdMobPlugin extends Plugin {
             });
         });
     }
+
+    @PluginMethod
+    public void exitApp(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            try {
+                getActivity().finishAffinity();
+                System.exit(0);
+            } catch (Exception e) {
+                Log.e(TAG, "Error exiting app: " + e.getMessage());
+            }
+        });
+        call.resolve();
+    }
 }
