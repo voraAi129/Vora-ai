@@ -32,7 +32,10 @@ import {
   Server,
   Gift,
   Percent,
-  Award
+  Award,
+  Swords,
+  Flame,
+  Gamepad2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { sound } from '../services/audio';
