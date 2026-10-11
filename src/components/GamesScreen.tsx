@@ -23,7 +23,7 @@ import {
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
 import { sound } from '../services/audio';
-import { User, GameConfig, GameStakeTier, GameId } from '../types';
+import { User, GameConfig, GameStakeTier, GameId, DEFAULT_GAMES, DEFAULT_STAKES } from '../types';
 
 interface GamesScreenProps {
   user: User;
@@ -37,15 +37,15 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
   onNavigateToRecharge
 }) => {
   // State
-  const [games, setGames] = useState<GameConfig[]>([]);
-  const [stakes, setStakes] = useState<GameStakeTier[]>([]);
-  const [walletBalance, setWalletBalance] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [games, setGames] = useState<GameConfig[]>(DEFAULT_GAMES);
+  const [stakes, setStakes] = useState<GameStakeTier[]>(DEFAULT_STAKES);
+  const [walletBalance, setWalletBalance] = useState<number>(() => (user as any).availableBalance || 0);
+  const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Selected game & stake for modal
   const [selectedGame, setSelectedGame] = useState<GameConfig | null>(null);
-  const [selectedStake, setSelectedStake] = useState<GameStakeTier | null>(null);
+  const [selectedStake, setSelectedStake] = useState<GameStakeTier | null>(DEFAULT_STAKES[0]);
   const [useCustomStake, setUseCustomStake] = useState<boolean>(false);
   const [customStakeInput, setCustomStakeInput] = useState<string>('50');
 

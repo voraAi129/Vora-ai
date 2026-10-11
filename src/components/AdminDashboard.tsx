@@ -47,7 +47,9 @@ import {
   SupportTicket,
   AuditLog,
   AdRewardConfig,
-  UpiDeposit
+  UpiDeposit,
+  DEFAULT_GAMES,
+  DEFAULT_STAKES
 } from '../types';
 
 interface AdminDashboardProps {
@@ -152,8 +154,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [gamesSettings, setGamesSettings] = useState<any>({
     winRatePercent: 9,
     payoutMultiplier: 1.6,
-    games: [],
-    stakes: []
+    games: DEFAULT_GAMES,
+    stakes: DEFAULT_STAKES
   });
   const [gamesStats, setGamesStats] = useState<any>({
     totalGames: 0,

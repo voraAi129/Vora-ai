@@ -22,7 +22,9 @@ import {
   GameStakeTier,
   GameSettings,
   GameSession,
-  GameHistoryItem
+  GameHistoryItem,
+  DEFAULT_GAMES,
+  DEFAULT_STAKES
 } from '../types';
 
 export const LIVE_BACKEND_URL = 'https://vora-earning-production.up.railway.app';
@@ -454,6 +456,84 @@ class ApiService {
             totalEarnings: 980
           }
         ]
+      } as unknown as T;
+    }
+
+    // 24. Game Configuration & Arena Lobby Fallback
+    if (cleanEndpoint === '/api/games/config') {
+      const storedBalance = (() => {
+        try {
+          const userStr = localStorage.getItem('vora_user_data');
+          if (userStr) {
+            const u = JSON.parse(userStr);
+            if (typeof u.availableBalance === 'number') return u.availableBalance;
+          }
+        } catch {}
+        return 1500;
+      })();
+      return {
+        games: DEFAULT_GAMES,
+        stakes: DEFAULT_STAKES,
+        availableBalance: storedBalance,
+        winRatePercent: 9
+      } as unknown as T;
+    }
+
+    // 25. Game Start / Matchmaking Fallback
+    if (cleanEndpoint === '/api/games/start') {
+      const botNames = ['Aryan Sharma', 'Rahul V.', 'Pooja Gaming', 'Rohan Pro', 'Deepak 99', 'Vikram King'];
+      const chosenBot = botNames[Math.floor(Math.random() * botNames.length)];
+      return {
+        success: true,
+        sessionId: `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        game: DEFAULT_GAMES[0],
+        entryFee: 0.50,
+        payout: 0.80,
+        bot: { name: chosenBot, avatar: '🤖' },
+        targetResult: Math.random() < 0.09 ? 'WON' : 'LOST',
+        availableBalance: 1499.50,
+        transactionId: `tx_game_${Date.now()}`
+      } as unknown as T;
+    }
+
+    // 26. Game Finish Fallback
+    if (cleanEndpoint === '/api/games/finish') {
+      return {
+        success: true,
+        result: 'LOST',
+        entryFee: 0.50,
+        payout: 0,
+        availableBalance: 1499.50,
+        botName: 'Aryan Sharma',
+        transactionId: `tx_fin_${Date.now()}`
+      } as unknown as T;
+    }
+
+    // 27. Game History Fallback
+    if (cleanEndpoint === '/api/games/history') {
+      return {
+        history: []
+      } as unknown as T;
+    }
+
+    // 28. Admin Games Settings Fallback
+    if (cleanEndpoint === '/api/admin/games/settings') {
+      return {
+        settings: {
+          winRatePercent: 9,
+          payoutMultiplier: 1.6,
+          games: DEFAULT_GAMES,
+          stakes: DEFAULT_STAKES
+        },
+        stats: {
+          totalGames: 184,
+          totalBets: 48500,
+          totalPayouts: 4320,
+          netProfit: 44180,
+          playerWins: 16,
+          actualWinRate: 8.7
+        },
+        recentHistory: []
       } as unknown as T;
     }
 

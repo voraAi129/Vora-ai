@@ -316,3 +316,68 @@ export interface GameHistoryItem {
   botScore: number;
   createdAt: string;
 }
+
+export const DEFAULT_GAMES: GameConfig[] = [
+  {
+    id: 'ludo',
+    name: 'Ludo Express',
+    icon: '🎲',
+    category: 'Classic Board',
+    description: 'Real-time 1v1 dice sprint vs smart bot (2-Player)',
+    enabled: true,
+    playerMode: '2_PLAYER'
+  },
+  {
+    id: 'carrom',
+    name: 'Carrom Clash',
+    icon: '🎯',
+    category: 'Physics Striker',
+    description: 'Pocket coins & queen vs bot striker master (2-Player)',
+    enabled: true,
+    playerMode: '2_PLAYER'
+  },
+  {
+    id: 'fruit_ninja',
+    name: 'Fruit Slash',
+    icon: '🍉',
+    category: 'Arcade Blade',
+    description: 'Slice juicy fruits & avoid explosive bombs (Single Player)',
+    enabled: true,
+    playerMode: 'SINGLE_PLAYER'
+  },
+  {
+    id: 'knife_hit',
+    name: 'Knife Hit Master',
+    icon: '🗡️',
+    category: 'Precision Timing',
+    description: 'Target rotating logs without hitting blades (Single Player)',
+    enabled: true,
+    playerMode: 'SINGLE_PLAYER'
+  },
+  {
+    id: 'candy_match',
+    name: 'Candy Match 3',
+    icon: '🍬',
+    category: 'Puzzle Match',
+    description: 'Match delicious candies for high score (Single Player)',
+    enabled: true,
+    playerMode: 'SINGLE_PLAYER'
+  }
+];
+
+export const DEFAULT_STAKES: GameStakeTier[] = [
+  { id: 'tier_0_5', entryFee: 0.50, payout: 0.80 },
+  { id: 'tier_1', entryFee: 1.0, payout: 1.60 },
+  { id: 'tier_5', entryFee: 5.0, payout: 8.0 },
+  { id: 'tier_10', entryFee: 10.0, payout: 16.0 },
+  { id: 'tier_50', entryFee: 50.0, payout: 80.0 },
+  { id: 'tier_100', entryFee: 100.0, payout: 160.0 },
+  { id: 'tier_200', entryFee: 200.0, payout: 320.0 },
+  { id: 'tier_500', entryFee: 500.0, payout: 800.0 },
+  { id: 'tier_1000', entryFee: 1000.0, payout: 1600.0 },
+  { id: 'tier_2000', entryFee: 2000.0, payout: 3200.0 },
+  { id: 'tier_5000', entryFee: 5000.0, payout: 8000.0 },
+  { id: 'tier_10000', entryFee: 10000.0, payout: 16000.0 },
+  { id: 'tier_20000', entryFee: 20000.0, payout: 32000.0 }
+];
+
