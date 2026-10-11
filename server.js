@@ -22,6 +22,34 @@ console.log(`[DB] Using data directory: ${DATA_DIR}`);
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
+const defaultGameSettings = {
+  winRatePercent: 9,
+  // Player has 9% chance to win, Bot has 91% chance
+  payoutMultiplier: 1.6,
+  // 1.6x multiplier (₹0.50 -> ₹0.80)
+  games: [
+    { id: "ludo", name: "Ludo Express", icon: "\u{1F3B2}", category: "Classic Board", description: "Real-time 1v1 dice sprint vs smart bot (2-Player)", enabled: true, playerMode: "2_PLAYER" },
+    { id: "carrom", name: "Carrom Clash", icon: "\u{1F3AF}", category: "Physics Striker", description: "Pocket coins & queen vs bot striker master (2-Player)", enabled: true, playerMode: "2_PLAYER" },
+    { id: "fruit_ninja", name: "Fruit Slash", icon: "\u{1F349}", category: "Arcade Blade", description: "Slice juicy fruits & avoid explosive bombs (Single Player)", enabled: true, playerMode: "SINGLE_PLAYER" },
+    { id: "knife_hit", name: "Knife Hit Master", icon: "\u{1F5E1}\uFE0F", category: "Precision Timing", description: "Target rotating logs without hitting blades (Single Player)", enabled: true, playerMode: "SINGLE_PLAYER" },
+    { id: "candy_match", name: "Candy Match 3", icon: "\u{1F36C}", category: "Puzzle Match", description: "Match delicious candies for high score (Single Player)", enabled: true, playerMode: "SINGLE_PLAYER" }
+  ],
+  stakes: [
+    { id: "tier_0_5", entryFee: 0.5, payout: 0.8 },
+    { id: "tier_1", entryFee: 1, payout: 1.6 },
+    { id: "tier_5", entryFee: 5, payout: 8 },
+    { id: "tier_10", entryFee: 10, payout: 16 },
+    { id: "tier_50", entryFee: 50, payout: 80 },
+    { id: "tier_100", entryFee: 100, payout: 160 },
+    { id: "tier_200", entryFee: 200, payout: 320 },
+    { id: "tier_500", entryFee: 500, payout: 800 },
+    { id: "tier_1000", entryFee: 1e3, payout: 1600 },
+    { id: "tier_2000", entryFee: 2e3, payout: 3200 },
+    { id: "tier_5000", entryFee: 5e3, payout: 8e3 },
+    { id: "tier_10000", entryFee: 1e4, payout: 16e3 },
+    { id: "tier_20000", entryFee: 2e4, payout: 32e3 }
+  ]
+};
 const defaultSettings = {
   appName: "VORA EARNING",
   maintenanceMode: false,
@@ -82,6 +110,9 @@ let db = {
   auditLogs: [],
   notifications: [],
   supportTickets: [],
+  gameSettings: { ...defaultGameSettings },
+  gameHistory: [],
+  activeGameSessions: {},
   settings: { ...defaultSettings },
   otpStore: {},
   adTokens: {}
@@ -105,11 +136,29 @@ function loadDb() {
         settings: {
           ...defaultSettings,
           ...parsed.settings || {}
+        },
+        gameSettings: {
+          ...defaultGameSettings,
+          ...parsed.gameSettings || {}
         }
       };
       if (!db.supportTickets) db.supportTickets = [];
       if (!db.upiDeposits) db.upiDeposits = [];
       if (!db.withdrawals) db.withdrawals = [];
+      if (!db.gameHistory) db.gameHistory = [];
+      if (!db.activeGameSessions) db.activeGameSessions = {};
+      if (!db.gameSettings.games || db.gameSettings.games.length === 0) {
+        db.gameSettings.games = defaultGameSettings.games;
+      }
+      if (!db.gameSettings.stakes || db.gameSettings.stakes.length < 5) {
+        db.gameSettings.stakes = defaultGameSettings.stakes;
+      }
+      if (db.gameSettings.winRatePercent === void 0) {
+        db.gameSettings.winRatePercent = 9;
+      }
+      if (!db.gameSettings.payoutMultiplier) {
+        db.gameSettings.payoutMultiplier = 1.6;
+      }
       if (!db.settings.upiId) db.settings.upiId = "9266428368-i638-2@ibl";
       if (!db.settings.upiPayeeName) db.settings.upiPayeeName = "Vora Earning";
     }
@@ -1706,6 +1755,183 @@ app.post("/api/rewards/test-complete", requireAuth, (req, res) => {
   saveDb();
   res.json({ success: true, message: "Session elapsed for testing", session });
 });
+const BOT_NAMES = [
+  "Aarav_Gamer",
+  "Rohit_99",
+  "Vikram_Pro",
+  "Kabir_Boss",
+  "Aryan_X",
+  "Karan_Master",
+  "Aditya_King",
+  "Rahul_Striker",
+  "Dev_Ninja",
+  "Sameer_Apex"
+];
+app.get("/api/games/config", requireAuth, (req, res) => {
+  const wallet = getWallet(req.user.id);
+  res.json({
+    games: db.gameSettings.games,
+    stakes: db.gameSettings.stakes,
+    availableBalance: wallet.availableBalance,
+    winRatePercent: db.gameSettings.winRatePercent
+  });
+});
+app.post("/api/games/start", requireAuth, (req, res) => {
+  const { gameId, stakeTierId, customEntryFee } = req.body;
+  const user = req.user;
+  const wallet = getWallet(user.id);
+  const game = db.gameSettings.games.find((g) => g.id === gameId);
+  if (!game) {
+    return res.status(404).json({ error: "Game not found" });
+  }
+  if (!game.enabled) {
+    return res.status(400).json({ error: "This game is currently disabled by administrator" });
+  }
+  let entryFee = 0;
+  let payout = 0;
+  let stake = void 0;
+  if (customEntryFee !== void 0 && customEntryFee !== null && Number(customEntryFee) > 0) {
+    const fee = Number(customEntryFee);
+    if (isNaN(fee) || fee < 0.5 || fee > 2e4) {
+      return res.status(400).json({ error: "Entry fee must be between \u20B90.50 and \u20B920,000" });
+    }
+    entryFee = Math.round(fee * 100) / 100;
+    const mult = db.gameSettings.payoutMultiplier || 1.6;
+    payout = Math.round(entryFee * mult * 100) / 100;
+  } else {
+    stake = db.gameSettings.stakes.find((s) => s.id === stakeTierId) || db.gameSettings.stakes[0];
+    if (!stake) {
+      return res.status(404).json({ error: "Selected stake tier not found" });
+    }
+    entryFee = Number(stake.entryFee);
+    payout = Number(stake.payout);
+  }
+  if (wallet.availableBalance < entryFee) {
+    return res.status(400).json({
+      error: `Insufficient balance! You need \u20B9${entryFee} to play. Current balance: \u20B9${wallet.availableBalance.toFixed(2)}. Pehle recharge karein!`
+    });
+  }
+  wallet.availableBalance = Math.round((wallet.availableBalance - entryFee) * 100) / 100;
+  wallet.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+  const sessionId = `gm_sess_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+  const tx = addTransaction(
+    user.id,
+    -entryFee,
+    "GAME_ENTRY",
+    "SUCCESS",
+    `Game Entry Fee: ${game.name} (Stake \u20B9${entryFee})`,
+    sessionId
+  );
+  const winChance = db.gameSettings.winRatePercent ?? 9;
+  const isPlayerWinner = Math.random() * 100 < winChance;
+  const botName = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+  db.activeGameSessions[sessionId] = {
+    id: sessionId,
+    userId: user.id,
+    gameId: game.id,
+    gameName: game.name,
+    entryFee,
+    payout,
+    targetResult: isPlayerWinner ? "WON" : "LOST",
+    botName,
+    createdAt: Date.now()
+  };
+  saveDb();
+  res.json({
+    success: true,
+    sessionId,
+    game,
+    stake,
+    entryFee,
+    payout,
+    bot: {
+      name: botName,
+      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${botName}`
+    },
+    targetResult: isPlayerWinner ? "WON" : "LOST",
+    availableBalance: wallet.availableBalance,
+    transactionId: tx.id
+  });
+});
+app.post("/api/games/finish", requireAuth, (req, res) => {
+  const { sessionId, playerScore, botScore } = req.body;
+  const user = req.user;
+  const session = db.activeGameSessions[sessionId];
+  if (!session) {
+    return res.status(400).json({ error: "Invalid or expired game session" });
+  }
+  if (session.userId !== user.id) {
+    return res.status(403).json({ error: "Unauthorized game session" });
+  }
+  const wallet = getWallet(user.id);
+  const isWinner = session.targetResult === "WON";
+  delete db.activeGameSessions[sessionId];
+  let payoutCredited = 0;
+  let txId = "";
+  if (isWinner) {
+    payoutCredited = session.payout;
+    wallet.availableBalance = Math.round((wallet.availableBalance + payoutCredited) * 100) / 100;
+    wallet.totalRewards = Math.round((wallet.totalRewards + payoutCredited) * 100) / 100;
+    wallet.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    const winTx = addTransaction(
+      user.id,
+      payoutCredited,
+      "GAME_WIN",
+      "SUCCESS",
+      `Game Victory Reward: Won \u20B9${payoutCredited} in ${session.gameName}!`,
+      session.id
+    );
+    txId = winTx.id;
+    sendNotification(
+      user.id,
+      `\u{1F3C6} Game Won: \u20B9${payoutCredited}`,
+      `Congratulations! You defeated ${session.botName} in ${session.gameName} and won \u20B9${payoutCredited}!`,
+      "SUCCESS"
+    );
+  } else {
+    const lossTx = addTransaction(
+      user.id,
+      0,
+      "GAME_LOSS",
+      "SUCCESS",
+      `Game Round Lost: ${session.gameName} vs ${session.botName} (-\u20B9${session.entryFee})`,
+      session.id
+    );
+    txId = lossTx.id;
+  }
+  const gameRecord = {
+    id: session.id,
+    userId: user.id,
+    userName: user.name,
+    gameId: session.gameId,
+    gameName: session.gameName,
+    entryFee: session.entryFee,
+    payout: isWinner ? session.payout : 0,
+    result: isWinner ? "WON" : "LOST",
+    botName: session.botName,
+    playerScore: Number(playerScore) || (isWinner ? 100 : 45),
+    botScore: Number(botScore) || (isWinner ? 65 : 120),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  db.gameHistory.unshift(gameRecord);
+  if (db.gameHistory.length > 500) {
+    db.gameHistory = db.gameHistory.slice(0, 500);
+  }
+  saveDb();
+  res.json({
+    success: true,
+    result: isWinner ? "WON" : "LOST",
+    entryFee: session.entryFee,
+    payout: payoutCredited,
+    availableBalance: wallet.availableBalance,
+    botName: session.botName,
+    transactionId: txId
+  });
+});
+app.get("/api/games/history", requireAuth, (req, res) => {
+  const history = db.gameHistory.filter((g) => g.userId === req.user.id).slice(0, 25);
+  res.json({ history });
+});
 app.get("/api/ads/config", requireAuth, (req, res) => {
   const userWatchesToday = db.adWatches.filter((w) => {
     if (w.userId !== req.user.id || !w.completed) return false;
@@ -2249,6 +2475,71 @@ app.put("/api/admin/settings", requireAdmin, (req, res) => {
   );
   saveDb();
   res.json({ success: true, settings: db.settings });
+});
+app.get("/api/admin/games/settings", requireAdmin, (req, res) => {
+  const totalGames = db.gameHistory.length;
+  const totalBets = db.gameHistory.reduce((sum, g) => sum + (g.entryFee || 0), 0);
+  const totalPayouts = db.gameHistory.filter((g) => g.result === "WON").reduce((sum, g) => sum + (g.payout || 0), 0);
+  const netProfit = Math.round((totalBets - totalPayouts) * 100) / 100;
+  const playerWins = db.gameHistory.filter((g) => g.result === "WON").length;
+  const actualWinRate = totalGames > 0 ? Math.round(playerWins / totalGames * 100) : 0;
+  res.json({
+    settings: db.gameSettings,
+    stats: {
+      totalGames,
+      totalBets: Math.round(totalBets * 100) / 100,
+      totalPayouts: Math.round(totalPayouts * 100) / 100,
+      netProfit,
+      playerWins,
+      actualWinRate
+    },
+    recentHistory: db.gameHistory.slice(0, 30)
+  });
+});
+app.put("/api/admin/games/settings", requireAdmin, (req, res) => {
+  const { winRatePercent, payoutMultiplier, games, stakes, reason } = req.body;
+  const oldVal = JSON.stringify({
+    winRate: db.gameSettings.winRatePercent,
+    payoutMultiplier: db.gameSettings.payoutMultiplier,
+    gamesCount: db.gameSettings.games.length,
+    stakesCount: db.gameSettings.stakes.length
+  });
+  if (winRatePercent !== void 0) {
+    const num = Number(winRatePercent);
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      db.gameSettings.winRatePercent = num;
+    }
+  }
+  if (payoutMultiplier !== void 0) {
+    const mult = Number(payoutMultiplier);
+    if (!isNaN(mult) && mult >= 1 && mult <= 10) {
+      db.gameSettings.payoutMultiplier = mult;
+    }
+  }
+  if (Array.isArray(games)) {
+    db.gameSettings.games = games;
+  }
+  if (Array.isArray(stakes)) {
+    db.gameSettings.stakes = stakes;
+  }
+  const newVal = JSON.stringify({
+    winRate: db.gameSettings.winRatePercent,
+    payoutMultiplier: db.gameSettings.payoutMultiplier,
+    gamesCount: db.gameSettings.games.length,
+    stakesCount: db.gameSettings.stakes.length
+  });
+  addAuditLog(
+    req.user.id,
+    req.user.name,
+    "GAMES_SETTINGS_UPDATE",
+    "games:config",
+    oldVal,
+    newVal,
+    reason || "Game pricing and win rate adjustment",
+    req.ip
+  );
+  saveDb();
+  res.json({ success: true, settings: db.gameSettings });
 });
 app.get("/api/admin/referral-stats", requireAdmin, (req, res) => {
   const allReferred = db.users.filter((u) => !!u.referredBy);

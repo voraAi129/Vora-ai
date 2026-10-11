@@ -83,7 +83,7 @@ interface TransactionRecord {
   id: string;
   userId: string;
   amount: number;
-  type: 'RECHARGE' | 'WITHDRAWAL' | 'REWARD' | 'AD_REWARD' | 'REFUND' | 'ADJUSTMENT' | 'SESSION_PARTICIPATION' | 'REFERRAL_BONUS' | 'REFERRAL_COMMISSION';
+  type: 'RECHARGE' | 'WITHDRAWAL' | 'REWARD' | 'AD_REWARD' | 'REFUND' | 'ADJUSTMENT' | 'SESSION_PARTICIPATION' | 'REFERRAL_BONUS' | 'REFERRAL_COMMISSION' | 'GAME_ENTRY' | 'GAME_WIN' | 'GAME_LOSS';
   status: 'INITIATED' | 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
   description: string;
   referenceId?: string;
@@ -263,6 +263,44 @@ interface SupportTicketRecord {
   updatedAt: string;
 }
 
+interface GameConfig {
+  id: string;
+  name: string;
+  icon: string;
+  category: string;
+  description: string;
+  enabled: boolean;
+  playerMode: '2_PLAYER' | 'SINGLE_PLAYER';
+}
+
+interface GameStakeTier {
+  id: string;
+  entryFee: number;
+  payout: number;
+}
+
+interface GameRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  gameId: string;
+  gameName: string;
+  entryFee: number;
+  payout: number;
+  result: 'WON' | 'LOST';
+  botName: string;
+  playerScore: number;
+  botScore: number;
+  createdAt: string;
+}
+
+interface GameSettingsRecord {
+  winRatePercent: number; // default: 9 (Player win rate ~9%, Bot win rate ~91%)
+  payoutMultiplier?: number; // default: 1.6 (e.g. ₹0.50 -> ₹0.80)
+  games: GameConfig[];
+  stakes: GameStakeTier[];
+}
+
 interface DatabaseState {
   users: UserRecord[];
   sessions: SessionRecord[];
@@ -277,10 +315,51 @@ interface DatabaseState {
   auditLogs: AuditLogRecord[];
   notifications: NotificationRecord[];
   supportTickets: SupportTicketRecord[];
+  gameSettings: GameSettingsRecord;
+  gameHistory: GameRecord[];
+  activeGameSessions: Record<string, {
+    id: string;
+    userId: string;
+    gameId: string;
+    gameName: string;
+    entryFee: number;
+    payout: number;
+    targetResult: 'WON' | 'LOST';
+    botName: string;
+    createdAt: number;
+  }>;
   settings: AppSettingsRecord;
   otpStore: Record<string, { otp: string; expiresAt: number; attempts: number; verified?: boolean }>;
   adTokens: Record<string, AdRewardToken>;
 }
+
+// Default Games Configuration (5 Games, 2 Two-Player vs Bot + 3 Single Player, Stakes ₹0.50 to ₹20,000, 9% win rate)
+const defaultGameSettings: GameSettingsRecord = {
+  winRatePercent: 9, // Player has 9% chance to win, Bot has 91% chance
+  payoutMultiplier: 1.6, // 1.6x multiplier (₹0.50 -> ₹0.80)
+  games: [
+    { id: 'ludo', name: 'Ludo Express', icon: '🎲', category: 'Classic Board', description: 'Real-time 1v1 dice sprint vs smart bot (2-Player)', enabled: true, playerMode: '2_PLAYER' },
+    { id: 'carrom', name: 'Carrom Clash', icon: '🎯', category: 'Physics Striker', description: 'Pocket coins & queen vs bot striker master (2-Player)', enabled: true, playerMode: '2_PLAYER' },
+    { id: 'fruit_ninja', name: 'Fruit Slash', icon: '🍉', category: 'Arcade Blade', description: 'Slice juicy fruits & avoid explosive bombs (Single Player)', enabled: true, playerMode: 'SINGLE_PLAYER' },
+    { id: 'knife_hit', name: 'Knife Hit Master', icon: '🗡️', category: 'Precision Timing', description: 'Target rotating logs without hitting blades (Single Player)', enabled: true, playerMode: 'SINGLE_PLAYER' },
+    { id: 'candy_match', name: 'Candy Match 3', icon: '🍬', category: 'Puzzle Match', description: 'Match delicious candies for high score (Single Player)', enabled: true, playerMode: 'SINGLE_PLAYER' }
+  ],
+  stakes: [
+    { id: 'tier_0_5', entryFee: 0.50, payout: 0.80 },
+    { id: 'tier_1', entryFee: 1.0, payout: 1.60 },
+    { id: 'tier_5', entryFee: 5.0, payout: 8.0 },
+    { id: 'tier_10', entryFee: 10.0, payout: 16.0 },
+    { id: 'tier_50', entryFee: 50.0, payout: 80.0 },
+    { id: 'tier_100', entryFee: 100.0, payout: 160.0 },
+    { id: 'tier_200', entryFee: 200.0, payout: 320.0 },
+    { id: 'tier_500', entryFee: 500.0, payout: 800.0 },
+    { id: 'tier_1000', entryFee: 1000.0, payout: 1600.0 },
+    { id: 'tier_2000', entryFee: 2000.0, payout: 3200.0 },
+    { id: 'tier_5000', entryFee: 5000.0, payout: 8000.0 },
+    { id: 'tier_10000', entryFee: 10000.0, payout: 16000.0 },
+    { id: 'tier_20000', entryFee: 20000.0, payout: 32000.0 }
+  ]
+};
 
 // Initial default settings
 const defaultSettings: AppSettingsRecord = {
@@ -348,6 +427,9 @@ let db: DatabaseState = {
   auditLogs: [],
   notifications: [],
   supportTickets: [],
+  gameSettings: { ...defaultGameSettings },
+  gameHistory: [],
+  activeGameSessions: {},
   settings: { ...defaultSettings },
   otpStore: {},
   adTokens: {}
@@ -373,11 +455,29 @@ function loadDb() {
         settings: {
           ...defaultSettings,
           ...(parsed.settings || {})
+        },
+        gameSettings: {
+          ...defaultGameSettings,
+          ...(parsed.gameSettings || {})
         }
       };
       if (!db.supportTickets) db.supportTickets = [];
       if (!db.upiDeposits) db.upiDeposits = [];
       if (!db.withdrawals) db.withdrawals = [];
+      if (!db.gameHistory) db.gameHistory = [];
+      if (!db.activeGameSessions) db.activeGameSessions = {};
+      if (!db.gameSettings.games || db.gameSettings.games.length === 0) {
+        db.gameSettings.games = defaultGameSettings.games;
+      }
+      if (!db.gameSettings.stakes || db.gameSettings.stakes.length < 5) {
+        db.gameSettings.stakes = defaultGameSettings.stakes;
+      }
+      if (db.gameSettings.winRatePercent === undefined) {
+        db.gameSettings.winRatePercent = 9;
+      }
+      if (!db.gameSettings.payoutMultiplier) {
+        db.gameSettings.payoutMultiplier = 1.6;
+      }
       if (!db.settings.upiId) db.settings.upiId = '9266428368-i638-2@ibl';
       if (!db.settings.upiPayeeName) db.settings.upiPayeeName = 'Vora Earning';
     }
@@ -2381,6 +2481,215 @@ app.post('/api/rewards/test-complete', requireAuth, (req: AuthenticatedRequest, 
 });
 
 // ==========================================
+// 1V1 REAL-TIME BOT MINI-GAMES ENGINE
+// ==========================================
+
+const BOT_NAMES = [
+  'Aarav_Gamer', 'Rohit_99', 'Vikram_Pro', 'Kabir_Boss', 'Aryan_X', 
+  'Karan_Master', 'Aditya_King', 'Rahul_Striker', 'Dev_Ninja', 'Sameer_Apex'
+];
+
+app.get('/api/games/config', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const wallet = getWallet(req.user!.id);
+  res.json({
+    games: db.gameSettings.games,
+    stakes: db.gameSettings.stakes,
+    availableBalance: wallet.availableBalance,
+    winRatePercent: db.gameSettings.winRatePercent
+  });
+});
+
+app.post('/api/games/start', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const { gameId, stakeTierId, customEntryFee } = req.body;
+  const user = req.user!;
+  const wallet = getWallet(user.id);
+
+  const game = db.gameSettings.games.find(g => g.id === gameId);
+  if (!game) {
+    return res.status(404).json({ error: 'Game not found' });
+  }
+  if (!game.enabled) {
+    return res.status(400).json({ error: 'This game is currently disabled by administrator' });
+  }
+
+  let entryFee = 0;
+  let payout = 0;
+  let stake = undefined;
+
+  if (customEntryFee !== undefined && customEntryFee !== null && Number(customEntryFee) > 0) {
+    const fee = Number(customEntryFee);
+    if (isNaN(fee) || fee < 0.50 || fee > 20000) {
+      return res.status(400).json({ error: 'Entry fee must be between ₹0.50 and ₹20,000' });
+    }
+    entryFee = Math.round(fee * 100) / 100;
+    const mult = db.gameSettings.payoutMultiplier || 1.6;
+    payout = Math.round(entryFee * mult * 100) / 100;
+  } else {
+    stake = db.gameSettings.stakes.find(s => s.id === stakeTierId) || db.gameSettings.stakes[0];
+    if (!stake) {
+      return res.status(404).json({ error: 'Selected stake tier not found' });
+    }
+    entryFee = Number(stake.entryFee);
+    payout = Number(stake.payout);
+  }
+
+  if (wallet.availableBalance < entryFee) {
+    return res.status(400).json({
+      error: `Insufficient balance! You need ₹${entryFee} to play. Current balance: ₹${wallet.availableBalance.toFixed(2)}. Pehle recharge karein!`
+    });
+  }
+
+  // Deduct entry fee immediately from wallet
+  wallet.availableBalance = Math.round((wallet.availableBalance - entryFee) * 100) / 100;
+  wallet.updatedAt = new Date().toISOString();
+
+  const sessionId = `gm_sess_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+
+  // Immutable ledger entry for entry fee
+  const tx = addTransaction(
+    user.id,
+    -entryFee,
+    'GAME_ENTRY',
+    'SUCCESS',
+    `Game Entry Fee: ${game.name} (Stake ₹${entryFee})`,
+    sessionId
+  );
+
+  // Authoritative Bot and Win Probability check (Player win rate = db.gameSettings.winRatePercent, default 9%)
+  const winChance = db.gameSettings.winRatePercent ?? 9;
+  const isPlayerWinner = Math.random() * 100 < winChance;
+  const botName = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+
+  // Store active session
+  db.activeGameSessions[sessionId] = {
+    id: sessionId,
+    userId: user.id,
+    gameId: game.id,
+    gameName: game.name,
+    entryFee,
+    payout,
+    targetResult: isPlayerWinner ? 'WON' : 'LOST',
+    botName,
+    createdAt: Date.now()
+  };
+
+  saveDb();
+
+  res.json({
+    success: true,
+    sessionId,
+    game,
+    stake,
+    entryFee,
+    payout,
+    bot: {
+      name: botName,
+      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${botName}`
+    },
+    targetResult: isPlayerWinner ? 'WON' : 'LOST',
+    availableBalance: wallet.availableBalance,
+    transactionId: tx.id
+  });
+});
+
+app.post('/api/games/finish', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const { sessionId, playerScore, botScore } = req.body;
+  const user = req.user!;
+  const session = db.activeGameSessions[sessionId];
+
+  if (!session) {
+    return res.status(400).json({ error: 'Invalid or expired game session' });
+  }
+
+  if (session.userId !== user.id) {
+    return res.status(403).json({ error: 'Unauthorized game session' });
+  }
+
+  const wallet = getWallet(user.id);
+  const isWinner = session.targetResult === 'WON';
+
+  // Consume session to prevent replay
+  delete db.activeGameSessions[sessionId];
+
+  let payoutCredited = 0;
+  let txId = '';
+
+  if (isWinner) {
+    payoutCredited = session.payout;
+    wallet.availableBalance = Math.round((wallet.availableBalance + payoutCredited) * 100) / 100;
+    wallet.totalRewards = Math.round((wallet.totalRewards + payoutCredited) * 100) / 100;
+    wallet.updatedAt = new Date().toISOString();
+
+    const winTx = addTransaction(
+      user.id,
+      payoutCredited,
+      'GAME_WIN',
+      'SUCCESS',
+      `Game Victory Reward: Won ₹${payoutCredited} in ${session.gameName}!`,
+      session.id
+    );
+    txId = winTx.id;
+
+    sendNotification(
+      user.id,
+      `🏆 Game Won: ₹${payoutCredited}`,
+      `Congratulations! You defeated ${session.botName} in ${session.gameName} and won ₹${payoutCredited}!`,
+      'SUCCESS'
+    );
+  } else {
+    // Loss - entry fee was already deducted
+    const lossTx = addTransaction(
+      user.id,
+      0,
+      'GAME_LOSS',
+      'SUCCESS',
+      `Game Round Lost: ${session.gameName} vs ${session.botName} (-₹${session.entryFee})`,
+      session.id
+    );
+    txId = lossTx.id;
+  }
+
+  const gameRecord: GameRecord = {
+    id: session.id,
+    userId: user.id,
+    userName: user.name,
+    gameId: session.gameId,
+    gameName: session.gameName,
+    entryFee: session.entryFee,
+    payout: isWinner ? session.payout : 0,
+    result: isWinner ? 'WON' : 'LOST',
+    botName: session.botName,
+    playerScore: Number(playerScore) || (isWinner ? 100 : 45),
+    botScore: Number(botScore) || (isWinner ? 65 : 120),
+    createdAt: new Date().toISOString()
+  };
+
+  db.gameHistory.unshift(gameRecord);
+  if (db.gameHistory.length > 500) {
+    db.gameHistory = db.gameHistory.slice(0, 500);
+  }
+
+  saveDb();
+
+  res.json({
+    success: true,
+    result: isWinner ? 'WON' : 'LOST',
+    entryFee: session.entryFee,
+    payout: payoutCredited,
+    availableBalance: wallet.availableBalance,
+    botName: session.botName,
+    transactionId: txId
+  });
+});
+
+app.get('/api/games/history', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const history = db.gameHistory
+    .filter(g => g.userId === req.user!.id)
+    .slice(0, 25);
+  res.json({ history });
+});
+
+// ==========================================
 // GOOGLE ADMOB REWARDED ADS
 // ==========================================
 
@@ -3069,6 +3378,82 @@ app.put('/api/admin/settings', requireAdmin, (req: AuthenticatedRequest, res: Re
 
   saveDb();
   res.json({ success: true, settings: db.settings });
+});
+
+// Admin Games Settings & Analytics
+app.get('/api/admin/games/settings', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  const totalGames = db.gameHistory.length;
+  const totalBets = db.gameHistory.reduce((sum, g) => sum + (g.entryFee || 0), 0);
+  const totalPayouts = db.gameHistory.filter(g => g.result === 'WON').reduce((sum, g) => sum + (g.payout || 0), 0);
+  const netProfit = Math.round((totalBets - totalPayouts) * 100) / 100;
+  const playerWins = db.gameHistory.filter(g => g.result === 'WON').length;
+  const actualWinRate = totalGames > 0 ? Math.round((playerWins / totalGames) * 100) : 0;
+
+  res.json({
+    settings: db.gameSettings,
+    stats: {
+      totalGames,
+      totalBets: Math.round(totalBets * 100) / 100,
+      totalPayouts: Math.round(totalPayouts * 100) / 100,
+      netProfit,
+      playerWins,
+      actualWinRate
+    },
+    recentHistory: db.gameHistory.slice(0, 30)
+  });
+});
+
+app.put('/api/admin/games/settings', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  const { winRatePercent, payoutMultiplier, games, stakes, reason } = req.body;
+  const oldVal = JSON.stringify({
+    winRate: db.gameSettings.winRatePercent,
+    payoutMultiplier: db.gameSettings.payoutMultiplier,
+    gamesCount: db.gameSettings.games.length,
+    stakesCount: db.gameSettings.stakes.length
+  });
+
+  if (winRatePercent !== undefined) {
+    const num = Number(winRatePercent);
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      db.gameSettings.winRatePercent = num;
+    }
+  }
+
+  if (payoutMultiplier !== undefined) {
+    const mult = Number(payoutMultiplier);
+    if (!isNaN(mult) && mult >= 1.0 && mult <= 10.0) {
+      db.gameSettings.payoutMultiplier = mult;
+    }
+  }
+
+  if (Array.isArray(games)) {
+    db.gameSettings.games = games;
+  }
+
+  if (Array.isArray(stakes)) {
+    db.gameSettings.stakes = stakes;
+  }
+
+  const newVal = JSON.stringify({
+    winRate: db.gameSettings.winRatePercent,
+    payoutMultiplier: db.gameSettings.payoutMultiplier,
+    gamesCount: db.gameSettings.games.length,
+    stakesCount: db.gameSettings.stakes.length
+  });
+
+  addAuditLog(
+    req.user!.id,
+    req.user!.name,
+    'GAMES_SETTINGS_UPDATE',
+    'games:config',
+    oldVal,
+    newVal,
+    reason || 'Game pricing and win rate adjustment',
+    req.ip
+  );
+
+  saveDb();
+  res.json({ success: true, settings: db.gameSettings });
 });
 
 // Admin Referral Program Analytics & Settings

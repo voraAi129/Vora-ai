@@ -17,7 +17,12 @@ import {
   AuditLog,
   UpiDeposit,
   ReferralStats,
-  ReferralFriend
+  ReferralFriend,
+  GameConfig,
+  GameStakeTier,
+  GameSettings,
+  GameSession,
+  GameHistoryItem
 } from '../types';
 
 export const LIVE_BACKEND_URL = 'https://vora-earning-production.up.railway.app';
@@ -1027,6 +1032,81 @@ class ApiService {
     reason?: string;
   }) {
     return this.request<{ success: boolean; settings: Partial<AppSettings> }>('/api/admin/referral-settings', {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  // --- Games & 1v1 Bot Arena ---
+  public async getGamesConfig() {
+    return this.request<{
+      games: GameConfig[];
+      stakes: GameStakeTier[];
+      availableBalance: number;
+      winRatePercent: number;
+    }>('/api/games/config');
+  }
+
+  public async startGame(gameId: string, stakeTierId?: string, customEntryFee?: number) {
+    return this.request<{
+      success: boolean;
+      sessionId: string;
+      game: GameConfig;
+      stake?: GameStakeTier;
+      entryFee: number;
+      payout: number;
+      bot: { name: string; avatar: string };
+      targetResult: 'WON' | 'LOST';
+      availableBalance: number;
+      transactionId: string;
+    }>('/api/games/start', {
+      method: 'POST',
+      body: JSON.stringify({ gameId, stakeTierId, customEntryFee })
+    });
+  }
+
+  public async finishGame(sessionId: string, playerScore?: number, botScore?: number) {
+    return this.request<{
+      success: boolean;
+      result: 'WON' | 'LOST';
+      entryFee: number;
+      payout: number;
+      availableBalance: number;
+      botName: string;
+      transactionId: string;
+    }>('/api/games/finish', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId, playerScore, botScore })
+    });
+  }
+
+  public async getGameHistory() {
+    return this.request<{ history: GameHistoryItem[] }>('/api/games/history');
+  }
+
+  public async getAdminGamesSettings() {
+    return this.request<{
+      settings: GameSettings;
+      stats: {
+        totalGames: number;
+        totalBets: number;
+        totalPayouts: number;
+        netProfit: number;
+        playerWins: number;
+        actualWinRate: number;
+      };
+      recentHistory?: GameHistoryItem[];
+    }>('/api/admin/games/settings');
+  }
+
+  public async updateAdminGamesSettings(payload: {
+    winRatePercent?: number;
+    payoutMultiplier?: number;
+    games?: GameConfig[];
+    stakes?: GameStakeTier[];
+    reason?: string;
+  }) {
+    return this.request<{ success: boolean; settings: GameSettings }>('/api/admin/games/settings', {
       method: 'PUT',
       body: JSON.stringify(payload)
     });

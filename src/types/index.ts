@@ -32,7 +32,10 @@ export type TransactionType =
   | 'ADJUSTMENT'
   | 'SESSION_PARTICIPATION'
   | 'REFERRAL_COMMISSION'
-  | 'REFERRAL_BONUS';
+  | 'REFERRAL_BONUS'
+  | 'GAME_ENTRY'
+  | 'GAME_WIN'
+  | 'GAME_LOSS';
 
 export type TransactionStatus =
   | 'INITIATED'
@@ -263,3 +266,53 @@ export interface ReferralStats {
   referredUsers: ReferralFriend[];
 }
 
+export type GameId = 'ludo' | 'carrom' | 'fruit_ninja' | 'knife_hit' | 'candy_match';
+
+export interface GameConfig {
+  id: GameId;
+  name: string;
+  icon: string;
+  category: string;
+  description: string;
+  enabled: boolean;
+  playerMode: '2_PLAYER' | 'SINGLE_PLAYER';
+}
+
+export interface GameStakeTier {
+  id: string;
+  entryFee: number;
+  payout: number;
+}
+
+export interface GameSettings {
+  winRatePercent: number; // default: 9 (Player win rate ~9%, Bot win rate ~91%)
+  payoutMultiplier?: number; // default: 1.6 (e.g. ₹0.50 -> ₹0.80)
+  games: GameConfig[];
+  stakes: GameStakeTier[];
+}
+
+export interface GameSession {
+  sessionId: string;
+  gameId: GameId;
+  gameName: string;
+  entryFee: number;
+  payout: number;
+  bot: {
+    name: string;
+    avatar: string;
+  };
+  targetResult: 'WON' | 'LOST';
+}
+
+export interface GameHistoryItem {
+  id: string;
+  gameId: GameId;
+  gameName: string;
+  entryFee: number;
+  payout: number;
+  result: 'WON' | 'LOST';
+  botName: string;
+  playerScore: number;
+  botScore: number;
+  createdAt: string;
+}

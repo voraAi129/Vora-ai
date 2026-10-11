@@ -53,7 +53,7 @@ interface AdminDashboardProps {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'deposits' | 'users' | 'withdrawals' | 'ads' | 'campaigns' | 'referrals' | 'tickets' | 'settings' | 'audit' | 'testing'
+    'overview' | 'deposits' | 'users' | 'withdrawals' | 'ads' | 'games' | 'referrals' | 'tickets' | 'settings' | 'audit' | 'testing'
   >('overview');
 
   // Referral Program Config & Stats
@@ -145,9 +145,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [ticketReplyText, setTicketReplyText] = useState('');
 
-  // Campaigns
-  const [campaigns, setCampaigns] = useState<RewardCampaign[]>([]);
-  const [editingCampaign, setEditingCampaign] = useState<any | null>(null);
+  // Game Arena State
+  const [gamesSettings, setGamesSettings] = useState<any>({
+    winRatePercent: 9,
+    payoutMultiplier: 1.6,
+    games: [],
+    stakes: []
+  });
+  const [gamesStats, setGamesStats] = useState<any>({
+    totalGames: 0,
+    totalBets: 0,
+    totalPayouts: 0,
+    netProfit: 0,
+    playerWins: 0,
+    actualWinRate: 0
+  });
+  const [recentGameMatches, setRecentGameMatches] = useState<any[]>([]);
+  const [isSavingGameConfig, setIsSavingGameConfig] = useState(false);
+  const [newStakeEntry, setNewStakeEntry] = useState('');
+  const [newStakePayout, setNewStakePayout] = useState('');
 
   // Settings with persistent local fallback
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -229,13 +245,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       setLoading(false);
 
       // Load all admin modules in background
-      const [wRes, setRes, logRes, tktRes, upiRes, cmpRes, adRes, refRes] = await Promise.allSettled([
+      const [wRes, setRes, logRes, tktRes, upiRes, gmRes, adRes, refRes] = await Promise.allSettled([
         api.getAdminWithdrawals(),
         api.getAdminSettings(),
         api.getAdminAuditLogs(),
         api.getAdminTickets(),
         api.getAdminUpiDeposits(),
-        api.getAdminRewardConfig(),
+        api.getAdminGamesSettings(),
         api.getAdminAdConfig(),
         api.getAdminReferralStats()
       ]);
@@ -248,7 +264,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       if (logRes.status === 'fulfilled' && logRes.value?.auditLogs) setAuditLogs(logRes.value.auditLogs);
       if (tktRes.status === 'fulfilled' && tktRes.value?.tickets) setAdminTickets(tktRes.value.tickets);
       if (upiRes.status === 'fulfilled' && upiRes.value?.deposits) setUpiDeposits(upiRes.value.deposits);
-      if (cmpRes.status === 'fulfilled' && cmpRes.value?.campaigns) setCampaigns(cmpRes.value.campaigns);
+      if (gmRes.status === 'fulfilled' && gmRes.value) {
+        if (gmRes.value.settings) setGamesSettings(gmRes.value.settings);
+        if (gmRes.value.stats) setGamesStats(gmRes.value.stats);
+        if (gmRes.value.recentHistory) setRecentGameMatches(gmRes.value.recentHistory);
+      }
       if (adRes.status === 'fulfilled' && adRes.value) {
         setAdConfig(adRes.value);
         try { localStorage.setItem(CACHED_AD_CONFIG, JSON.stringify(adRes.value)); } catch {}
@@ -317,8 +337,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       api.getAdminUpiDeposits().then(r => { if (r?.deposits) setUpiDeposits(r.deposits); }).catch(() => {});
     } else if (activeTab === 'withdrawals') {
       api.getAdminWithdrawals().then(r => { if (r?.withdrawals) setWithdrawals(r.withdrawals); }).catch(() => {});
-    } else if (activeTab === 'campaigns') {
-      api.getAdminRewardConfig().then(r => { if (r?.campaigns) setCampaigns(r.campaigns); }).catch(() => {});
+    } else if (activeTab === 'games') {
+      api.getAdminGamesSettings().then(r => {
+        if (r?.settings) setGamesSettings(r.settings);
+        if (r?.stats) setGamesStats(r.stats);
+        if (r?.recentHistory) setRecentGameMatches(r.recentHistory);
+      }).catch(() => {});
     } else if (activeTab === 'settings') {
       api.getAdminSettings().then(r => {
         if (r?.settings) {
@@ -454,26 +478,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     }
   };
 
-  // Save Campaign
-  const handleSaveCampaign = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCampaign) return;
+  // Save Game Arena Settings
+  const handleSaveGameSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     try {
+      setIsSavingGameConfig(true);
       sound.playTap();
-      await api.updateAdminRewardConfig({
-        campaignId: editingCampaign.id,
-        name: editingCampaign.name,
-        rewardRatePercentage: editingCampaign.rewardRatePercentage,
-        durationHours: editingCampaign.durationHours,
-        status: editingCampaign.status
+      await api.updateAdminGamesSettings({
+        winRatePercent: Number(gamesSettings.winRatePercent),
+        payoutMultiplier: Number(gamesSettings.payoutMultiplier) || 1.6,
+        games: gamesSettings.games,
+        stakes: gamesSettings.stakes,
+        reason: 'Updated win probability, pricing and game stakes'
       });
       sound.playSuccess();
-      setToastMsg({ text: 'Campaign rules updated successfully.', type: 'success' });
-      setEditingCampaign(null);
-      loadDashboardData();
+      setToastMsg({ text: `Game settings saved! Real player win rate: ${gamesSettings.winRatePercent}%`, type: 'success' });
+      const res = await api.getAdminGamesSettings();
+      if (res?.settings) setGamesSettings(res.settings);
+      if (res?.stats) setGamesStats(res.stats);
+      if (res?.recentHistory) setRecentGameMatches(res.recentHistory);
     } catch (err: any) {
       sound.playError();
-      setToastMsg({ text: err.message || 'Campaign update failed', type: 'error' });
+      setToastMsg({ text: err.message || 'Failed to update game settings', type: 'error' });
+    } finally {
+      setIsSavingGameConfig(false);
     }
   };
 
@@ -725,7 +753,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
           { id: 'users', label: '👥 Users' },
           { id: 'withdrawals', label: '💸 Withdrawals' },
           { id: 'ads', label: '📺 Ads & AdMob' },
-          { id: 'campaigns', label: '🎯 Campaigns' },
+          { id: 'games', label: '🎮 Game Arena Control' },
           { id: 'referrals', label: '🎁 Referrals' },
           { id: 'tickets', label: '🎫 Support' },
           { id: 'settings', label: '⚙️ Settings' },
@@ -1606,91 +1634,388 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         </form>
       )}
 
-      {/* ================= TAB 5: CAMPAIGNS ================= */}
-      {activeTab === 'campaigns' && (
-        <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
-          <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-            <h4 className="font-bold text-white mb-1">Active 24-Hour Reward Campaigns</h4>
-            <p className="text-[10px] text-slate-400">
-              Configure reward percentage yields and durations without hardcoded promises.
+      {/* ================= TAB 5: GAME ARENA & WIN RATE CONTROL ================= */}
+      {activeTab === 'games' && (
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+          {/* Header Info Banner */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/60 via-indigo-950/40 to-slate-900 border border-purple-500/30 space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Swords className="w-4 h-4 text-amber-400" />
+                <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+                  1v1 Battle Arena & Game Rules Management
+                </h3>
+              </div>
+              <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                SERVER AUTHORITATIVE
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Real player ka win probability (default 9%), game price / stakes (50 paise se ₹20,000 tak), winning payout (1.6x), aur 5 games ka control yahan se manage karein.
             </p>
           </div>
 
-          <div className="space-y-2">
-            {campaigns.map((c) => (
-              <div key={c.id} className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-white text-xs">{c.name}</span>
-                  <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono text-[9px]">
-                    {c.status}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 font-mono text-[10px] text-slate-300">
-                  <div>Rate: {c.rewardRatePercentage}%</div>
-                  <div>Duration: {c.durationHours}h</div>
-                  <div>Pool: Active</div>
-                </div>
-                <button
-                  onClick={() => {
-                    sound.playTap();
-                    setEditingCampaign({ ...c });
-                  }}
-                  className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 font-semibold text-[11px]"
-                >
-                  Edit Campaign Rules
-                </button>
-              </div>
-            ))}
+          {/* House Financial Ledger & Live Performance */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total Games</span>
+              <p className="text-base font-bold font-mono text-white mt-0.5">{gamesStats.totalGames}</p>
+              <p className="text-[10px] text-slate-400">Total Played</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total Bets Collected</span>
+              <p className="text-base font-bold font-mono text-cyan-400 mt-0.5">₹{gamesStats.totalBets?.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-slate-400">Player Stakes In</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total Payouts Given</span>
+              <p className="text-base font-bold font-mono text-amber-400 mt-0.5">₹{gamesStats.totalPayouts?.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-slate-400">Player Wins Out</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Net House Profit</span>
+              <p className="text-base font-bold font-mono text-emerald-400 mt-0.5">₹{gamesStats.netProfit?.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-emerald-400">Actual Win Rate: {gamesStats.actualWinRate}%</p>
+            </div>
           </div>
 
-          {/* Edit Campaign Modal */}
-          {editingCampaign && (
-            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-              <form
-                onSubmit={handleSaveCampaign}
-                className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-800 p-5 shadow-2xl space-y-3 text-xs"
+          {/* REAL PLAYER WIN RATE CONTROL (PRIMARY USER REQUIREMENT) */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-[#0d121e] to-slate-900 border border-amber-500/30 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-extrabold text-white text-xs uppercase tracking-wider flex items-center space-x-1.5">
+                  <Flame className="w-4 h-4 text-rose-500" />
+                  <span>Real Player Win Probability (%)</span>
+                </h4>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Real player kitne percent games jitega aur bot kitne percent games jitega.
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-black font-mono text-amber-400">
+                  {gamesSettings.winRatePercent}%
+                </span>
+                <span className="text-[9px] block text-rose-400 font-mono font-bold">
+                  Bot Win: {100 - gamesSettings.winRatePercent}%
+                </span>
+              </div>
+            </div>
+
+            {/* Slider */}
+            <div className="space-y-1">
+              <input
+                type="range"
+                min="1"
+                max="100"
+                value={gamesSettings.winRatePercent}
+                onChange={(e) => setGamesSettings({ ...gamesSettings, winRatePercent: Number(e.target.value) })}
+                className="w-full accent-amber-400 bg-slate-800 h-2 rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                <span>1% (Max Profit)</span>
+                <span className="text-amber-400 font-bold">9% (Default Recommended)</span>
+                <span>50% (Fair 50/50)</span>
+                <span>100% (All Win)</span>
+              </div>
+            </div>
+
+            {/* Preset Buttons */}
+            <div className="flex items-center space-x-2 pt-1 flex-wrap gap-y-1">
+              <span className="text-[10px] text-slate-400 font-semibold">Quick Presets:</span>
+              {[
+                { val: 5, label: '5% (Extreme House)' },
+                { val: 9, label: '9% (User Requested)' },
+                { val: 15, label: '15%' },
+                { val: 25, label: '25%' },
+                { val: 50, label: '50% (Equal)' }
+              ].map((p) => (
+                <button
+                  key={p.val}
+                  type="button"
+                  onClick={() => {
+                    sound.playTap();
+                    setGamesSettings({ ...gamesSettings, winRatePercent: p.val });
+                  }}
+                  className={`py-1 px-2.5 rounded-lg text-[10px] font-mono font-bold border transition-all ${
+                    gamesSettings.winRatePercent === p.val
+                      ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-md'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300">
+              ⚡ <strong>Rule Active:</strong> 100 me se lagbhag {100 - gamesSettings.winRatePercent} games bot jitega aur {gamesSettings.winRatePercent} games real player jitega. Bot 2-Player games me automatic chalega.
+            </div>
+          </div>
+
+          {/* PAYOUT MULTIPLIER (e.g. 1.6x => ₹0.50 par ₹0.80) */}
+          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-white uppercase text-[11px]">
+                  Game Winning Multiplier Ratio
+                </h4>
+                <p className="text-[10px] text-slate-400">
+                  Player jab jitega toh entry fee par kitna guna paisa milega (Default 1.6x = 50 paise par 80 paise)
+                </p>
+              </div>
+              <span className="text-xl font-black font-mono text-emerald-400">
+                {(gamesSettings.payoutMultiplier || 1.6)}x
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                step="0.05"
+                min="1.0"
+                max="5.0"
+                value={gamesSettings.payoutMultiplier || 1.6}
+                onChange={(e) => setGamesSettings({ ...gamesSettings, payoutMultiplier: Number(e.target.value) })}
+                className="w-32 bg-slate-950 border border-slate-800 rounded-lg p-2 font-mono text-white text-xs font-bold"
+              />
+              <span className="text-[11px] text-slate-400 font-mono">
+                Formula: Payout = Entry × {(gamesSettings.payoutMultiplier || 1.6)}
+              </span>
+            </div>
+          </div>
+
+          {/* 5 GAMES SWITCHBOARD (TOGGLE ON/OFF) */}
+          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+            <h4 className="font-bold text-white uppercase text-[11px] flex items-center space-x-1.5">
+              <Gamepad2 className="w-4 h-4 text-cyan-400" />
+              <span>Available Games Switchboard (5 Total)</span>
+            </h4>
+
+            <div className="space-y-2">
+              {(gamesSettings.games || []).map((gm: any) => {
+                const is2P = gm.playerMode === '2_PLAYER' || gm.id === 'ludo' || gm.id === 'carrom';
+                return (
+                  <div
+                    key={gm.id}
+                    className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{gm.icon}</span>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-black text-white text-xs">{gm.name}</span>
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold border ${
+                            is2P ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          }`}>
+                            {is2P ? '👥 2-Player (vs Bot)' : '👤 Single Player'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400">{gm.description}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playTap();
+                        const updated = gamesSettings.games.map((g: any) =>
+                          g.id === gm.id ? { ...g, enabled: !g.enabled } : g
+                        );
+                        setGamesSettings({ ...gamesSettings, games: updated });
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all ${
+                        gm.enabled
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30'
+                      }`}
+                    >
+                      {gm.enabled ? 'ACTIVE' : 'DISABLED'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* STAKES MANAGEMENT (₹0.50 se ₹20,000 tak) */}
+          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-white uppercase text-[11px]">
+                  Stakes & Entry Pricing (₹0.50 to ₹20,000)
+                </h4>
+                <p className="text-[10px] text-slate-400">
+                  Predefined entry fees aur winning prizes
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playTap();
+                  const mult = gamesSettings.payoutMultiplier || 1.6;
+                  const defaultFees = [0.5, 1, 5, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+                  const resetStakes = defaultFees.map((fee) => ({
+                    id: `tier_${String(fee).replace('.', '_')}`,
+                    entryFee: fee,
+                    payout: Math.round(fee * mult * 100) / 100
+                  }));
+                  setGamesSettings({ ...gamesSettings, stakes: resetStakes });
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-[10px] text-slate-300 hover:text-white"
               >
-                <h3 className="text-sm font-bold text-white">Edit Reward Campaign</h3>
+                Reset Default Tiers
+              </button>
+            </div>
 
-                <div>
-                  <label className="text-slate-400 block mb-1">Campaign Name</label>
-                  <input
-                    type="text"
-                    value={editingCampaign.name}
-                    onChange={(e) => setEditingCampaign({ ...editingCampaign, name: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
-                  />
-                </div>
+            {/* Stakes Table */}
+            <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+              {(gamesSettings.stakes || []).map((stk: any, idx: number) => (
+                <div
+                  key={stk.id || idx}
+                  className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between text-xs font-mono"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <span className="text-[9px] text-slate-500 block uppercase">Entry Fee</span>
+                      <span className="text-white font-black text-sm">
+                        ₹{stk.entryFee < 1 ? stk.entryFee.toFixed(2) : stk.entryFee.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-500 block uppercase">Winning Prize</span>
+                      <span className="text-emerald-400 font-black text-sm">
+                        ₹{stk.payout < 1 ? stk.payout.toFixed(2) : stk.payout.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
 
-                <div>
-                  <label className="text-slate-400 block mb-1">Promotional Rate Percentage (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={editingCampaign.rewardRatePercentage}
-                    onChange={(e) => setEditingCampaign({ ...editingCampaign, rewardRatePercentage: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 font-mono text-white"
-                  />
-                </div>
-
-                <div className="flex space-x-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setEditingCampaign(null)}
-                    className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold"
+                    onClick={() => {
+                      sound.playTap();
+                      const filtered = gamesSettings.stakes.filter((_: any, i: number) => i !== idx);
+                      setGamesSettings({ ...gamesSettings, stakes: filtered });
+                    }}
+                    className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-xs"
+                    title="Delete Tier"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-2 rounded-xl bg-amber-400 text-slate-950 font-bold"
-                  >
-                    Save Changes
+                    ✕
                   </button>
                 </div>
-              </form>
+              ))}
             </div>
-          )}
+
+            {/* Add New Stake Row */}
+            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Add Custom Stake Tier:</span>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  max="20000"
+                  placeholder="Entry (₹) e.g. 50"
+                  value={newStakeEntry}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewStakeEntry(val);
+                    const n = Number(val);
+                    if (!isNaN(n) && n > 0) {
+                      setNewStakePayout(String(Math.round(n * (gamesSettings.payoutMultiplier || 1.6) * 100) / 100));
+                    }
+                  }}
+                  className="bg-slate-900 border border-slate-800 rounded-lg p-2 font-mono text-white text-xs"
+                />
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Payout (₹) e.g. 80"
+                  value={newStakePayout}
+                  onChange={(e) => setNewStakePayout(e.target.value)}
+                  className="bg-slate-900 border border-slate-800 rounded-lg p-2 font-mono text-emerald-400 text-xs"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const entry = Number(newStakeEntry);
+                  const payout = Number(newStakePayout);
+                  if (isNaN(entry) || entry < 0.5 || isNaN(payout) || payout <= entry) {
+                    sound.playError();
+                    setToastMsg({ text: 'Valid entry (min 0.50) and payout greater than entry required', type: 'error' });
+                    return;
+                  }
+                  sound.playTap();
+                  const newTier = {
+                    id: `tier_custom_${Date.now()}`,
+                    entryFee: entry,
+                    payout
+                  };
+                  const updated = [...(gamesSettings.stakes || []), newTier].sort((a, b) => a.entryFee - b.entryFee);
+                  setGamesSettings({ ...gamesSettings, stakes: updated });
+                  setNewStakeEntry('');
+                  setNewStakePayout('');
+                }}
+                className="w-full py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold border border-cyan-500/30 text-xs flex items-center justify-center space-x-1"
+              >
+                <span>+ Add Stake Tier</span>
+              </button>
+            </div>
+          </div>
+
+          {/* RECENT LIVE MATCHES AUDIT LOG */}
+          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
+            <h4 className="font-bold text-white uppercase text-[11px]">Recent 1v1 Matches History</h4>
+            {recentGameMatches.length === 0 ? (
+              <p className="text-slate-500 text-[10px]">No game matches played yet.</p>
+            ) : (
+              <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1 font-mono text-[10px]">
+                {recentGameMatches.map((m: any) => (
+                  <div
+                    key={m.id}
+                    className="p-2 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-white font-bold">{m.userName || 'Player'}</span>
+                        <span className="text-slate-400">in {m.gameName}</span>
+                      </div>
+                      <span className="text-slate-500">vs {m.botName} • Stake ₹{m.entryFee}</span>
+                    </div>
+
+                    <div className="text-right">
+                      <span className={`font-bold px-1.5 py-0.2 rounded ${
+                        m.result === 'WON' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                      }`}>
+                        {m.result === 'WON' ? `+₹${m.payout}` : `-₹${m.entryFee}`}
+                      </span>
+                      <span className="text-slate-500 text-[9px] block mt-0.5">
+                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* SAVE BUTTON */}
+          <button
+            type="button"
+            onClick={handleSaveGameSettings}
+            disabled={isSavingGameConfig}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center space-x-2 sticky bottom-2"
+          >
+            {isSavingGameConfig ? (
+              <Clock className="w-5 h-5 animate-spin text-slate-950" />
+            ) : (
+              <>
+                <CheckCircle2 className="w-5 h-5 text-slate-950" />
+                <span>SAVE GAME RULES & WIN RATE ({gamesSettings.winRatePercent}%)</span>
+              </>
+            )}
+          </button>
         </div>
       )}
 

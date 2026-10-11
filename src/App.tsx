@@ -25,6 +25,7 @@ import { NotificationsModal } from './components/NotificationsModal';
 import { ExitConfirmModal } from './components/ExitConfirmModal';
 import { OfflineModal } from './components/OfflineModal';
 import { ReferralScreen } from './components/ReferralScreen';
+import { GamesScreen } from './components/GamesScreen';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -41,7 +42,7 @@ export default function App() {
     }
     return null;
   });
-  const [currentView, setCurrentView] = useState<'home' | 'recharge' | 'withdraw' | 'history' | 'profile' | 'admin' | 'referral'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'recharge' | 'withdraw' | 'history' | 'profile' | 'admin' | 'referral' | 'games'>('home');
   const [systemSettings, setSystemSettings] = useState<AppSettings | null>(null);
 
   // Modals
@@ -277,6 +278,14 @@ export default function App() {
 
           {currentView === 'referral' && (
             <ReferralScreen
+              onBack={() => setCurrentView('home')}
+              onNavigateToRecharge={() => setCurrentView('recharge')}
+            />
+          )}
+
+          {currentView === 'games' && (
+            <GamesScreen
+              user={currentUser}
               onBack={() => setCurrentView('home')}
               onNavigateToRecharge={() => setCurrentView('recharge')}
             />
